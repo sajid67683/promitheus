@@ -33,35 +33,26 @@
 
         <nav class="flex-1 flex flex-col space-y-1">
             <a href="/" id="nav-learn"
-                class="nav-item {% if request.path == '/' or 'dashboard' in request.path %}active{% endif %}">
+                class="nav-item {% if request.url.path == '/' or 'dashboard' in request.url.path %}active{% endif %}">
                 <span class="text-2xl drop-shadow-sm">✒️</span>
                 <span class="font-bold tracking-wide text-[15px]">LEARN</span>
             </a>
 
-            <a href="#" id="nav-letters" class="nav-item">
-                <span class="text-2xl drop-shadow-sm">🔤</span>
-                <span class="font-bold tracking-wide text-[15px]">LETTERS</span>
-            </a>
 
-            <a href="#" id="nav-practice" class="nav-item">
-                <span class="text-2xl drop-shadow-sm">🏋️</span>
-                <span class="font-bold tracking-wide text-[15px]">PRACTICE</span>
-            </a>
-
-            <a href="/users/leaderboard" id="nav-leaderboard"
-                class="nav-item {% if 'leaderboard' in request.path %}active{% endif %}">
+            <a href="/leaderboard" id="nav-leaderboard"
+                class="nav-item {% if 'leaderboard' in request.url.path %}active{% endif %}">
                 <span class="text-2xl drop-shadow-sm">🛡️</span>
                 <span class="font-bold tracking-wide text-[15px]">LEADERBOARDS</span>
             </a>
 
-            <a href="/quests" id="nav-quests" class="nav-item {% if 'quests' in request.path %}active{% endif %}">
+            <a href="/quests" id="nav-quests" class="nav-item {% if 'quests' in request.url.path %}active{% endif %}">
                 <span class="text-2xl drop-shadow-sm">🧰</span>
                 <span class="font-bold tracking-wide text-[15px]">QUESTS</span>
             </a>
 
             <div class="relative group mt-auto">
-                <a href="/users/profile" id="nav-profile"
-                    class="nav-item w-full text-left {% if 'profile' in request.path %}active{% endif %}">
+                <a href="/profile" id="nav-profile"
+                    class="nav-item w-full text-left {% if 'profile' in request.url.path %}active{% endif %}">
                     <span class="text-2xl drop-shadow-sm">👨‍🎓</span>
                     <span class="font-bold tracking-wide text-[15px]">PROFILE</span>
                 </a>
@@ -91,7 +82,6 @@
                     </div>
                 </div>
             </div>
-        </nav>
         </nav>
     </aside>
 
@@ -164,7 +154,7 @@
                     class="border-2 border-slate-200 dark:border-slate-800 rounded-2xl p-5 mb-6 bg-white dark:bg-[#0b141a]">
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="font-bold text-lg text-slate-800 dark:text-slate-200">Daily Quests</h3>
-                        <a href="#"
+                        <a href="/quests"
                             class="text-[#1cb0f6] font-bold text-sm hover:text-[#1899d6] transition-colors uppercase tracking-wide">View
                             All</a>
                     </div>

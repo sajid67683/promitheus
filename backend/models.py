@@ -1,79 +1,155 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey, Date, DateTime, func
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    false,
+    func,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
+
 from .database import Base
-from datetime import datetime
+
+# JSONB on PostgreSQL, plain JSON elsewhere (lets the test suite run on SQLite).
+JSONType = JSON().with_variant(JSONB(), "postgresql")
+
+
+def _counter():
+    return Column(Integer, nullable=False, default=0, server_default=text("0"))
 
 
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True)
-    email = Column(String, unique=True, index=True)
-    hashed_password = Column(String)
+    id = Column(Integer, primary_key=True)
+    username = Column(String(30), nullable=False, unique=True)
+    # Stored lower-cased.
+    email = Column(String(254), nullable=False, unique=True)
+    # NULL for accounts that only sign in with Google.
+    hashed_password = Column(String(100), nullable=True)
+    google_sub = Column(String(255), nullable=True, unique=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     # --- LIFETIME STATS ---
-    xp = Column(Integer, default=0)
-    streak = Column(Integer, default=0)
+    xp = _counter()
+    streak = _counter()
+    # The last calendar day (in the user's timezone) a lesson was completed.
+    last_lesson_date = Column(Date, nullable=True)
 
-    # --- DAILY STATS (Reset Every Midnight) ---
-    daily_xp = Column(Integer, default=0)
-    daily_lessons = Column(Integer, default=0)
-    last_active_date = Column(Date, server_default=func.current_date())
+    # --- DAILY STATS (only valid while stats_date is today) ---
+    daily_xp = _counter()
+    daily_lessons = _counter()
+    stats_date = Column(Date, nullable=True)
 
-    # --- ✨ WEEKLY STATS (Reset Every Sunday) ---
-    weekly_xp = Column(Integer, default=0)
-
+    # --- WEEKLY STATS (reset by the weekly league cron) ---
+    weekly_xp = _counter()
     # Paper -> Iron -> Bronze -> Silver -> Gold -> Platinum -> Diamond
-    league = Column(String, default="Paper")
+    league = Column(String(20), nullable=False, default="Paper", server_default=text("'Paper'"))
 
-    quests_completed = Column(Integer, default=0)
+    # --- QUESTS ---
+    quests_completed = _counter()
+    month_quests = _counter()
+    quest_month = Column(String(7), nullable=True)  # "YYYY-MM" that month_quests belongs to
 
-    materials = relationship("SourceMaterial", back_populates="owner")
+    materials = relationship("SourceMaterial", back_populates="owner", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        # Usernames are unique regardless of case ("Sajid" and "sajid" can't both exist).
+        Index("ix_users_username_lower", func.lower(username), unique=True),
+    )
 
 
 class SourceMaterial(Base):
     __tablename__ = "source_materials"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    title = Column(String, nullable=False)
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = Column(String(255), nullable=False)
     raw_text = Column(Text, nullable=False)
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     owner = relationship("User", back_populates="materials")
-    lessons = relationship(
-        "Lesson", back_populates="material", cascade="all, delete-orphan")
+    lessons = relationship("Lesson", back_populates="material", cascade="all, delete-orphan")
 
 
 class Lesson(Base):
     __tablename__ = "lessons"
 
-    id = Column(Integer, primary_key=True, index=True)
-    material_id = Column(Integer, ForeignKey("source_materials.id"))
-    title = Column(String, index=True)
+    id = Column(Integer, primary_key=True)
+    material_id = Column(
+        Integer, ForeignKey("source_materials.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    title = Column(String(100), nullable=False)
+    order_in_unit = Column(Integer, nullable=False, default=1, server_default=text("1"))
+    is_completed = Column(Boolean, nullable=False, default=False, server_default=false())
+    completed_at = Column(DateTime(timezone=True), nullable=True)
 
-    # --- GAMIFICATION FIELDS ---
-    section_number = Column(Integer, default=1)
-    unit_number = Column(Integer, default=1)
-    order_in_unit = Column(Integer, default=1)
-    is_completed = Column(Boolean, default=False)
-
-    # --- RELATIONSHIPS ---
     material = relationship("SourceMaterial", back_populates="lessons")
     questions = relationship(
-        "Question", back_populates="lesson", cascade="all, delete-orphan")
+        "Question", back_populates="lesson", cascade="all, delete-orphan", order_by="Question.id"
+    )
 
 
 class Question(Base):
     __tablename__ = "questions"
 
-    id = Column(Integer, primary_key=True, index=True)
-    lesson_id = Column(Integer, ForeignKey("lessons.id"))
-    question_type = Column(String, nullable=False)
-
-    # PostgreSQL JSONB stores our prompt, options, and answer
-    content = Column(JSONB, nullable=False)
+    id = Column(Integer, primary_key=True)
+    lesson_id = Column(Integer, ForeignKey("lessons.id", ondelete="CASCADE"), nullable=False, index=True)
+    question_type = Column(String(30), nullable=False)
+    # prompt / options / chunks / answer. The answer never leaves the server.
+    content = Column(JSONType, nullable=False)
 
     lesson = relationship("Lesson", back_populates="questions")
+
+
+class LessonAttempt(Base):
+    """One run through a lesson's quiz. Answers are graded and recorded server-side."""
+
+    __tablename__ = "lesson_attempts"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    lesson_id = Column(Integer, ForeignKey("lessons.id", ondelete="CASCADE"), nullable=False, index=True)
+    started_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    correct_count = _counter()
+    xp_awarded = _counter()
+
+    answers = relationship("AttemptAnswer", back_populates="attempt", cascade="all, delete-orphan")
+
+
+class AttemptAnswer(Base):
+    __tablename__ = "attempt_answers"
+
+    id = Column(Integer, primary_key=True)
+    attempt_id = Column(
+        Integer, ForeignKey("lesson_attempts.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    question_id = Column(Integer, ForeignKey("questions.id", ondelete="CASCADE"), nullable=False)
+    is_correct = Column(Boolean, nullable=False)
+    used_ai = Column(Boolean, nullable=False, default=False, server_default=false())
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    attempt = relationship("LessonAttempt", back_populates="answers")
+
+    __table_args__ = (UniqueConstraint("attempt_id", "question_id", name="uq_attempt_question"),)
+
+
+class LeagueReset(Base):
+    """One row per processed week, so the weekly cron can't run twice for the same week."""
+
+    __tablename__ = "league_resets"
+
+    week_key = Column(String(10), primary_key=True)  # ISO week, e.g. "2026-W39"
+    ran_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    promoted = _counter()
+    demoted = _counter()

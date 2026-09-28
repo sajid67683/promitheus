@@ -1,151 +1,138 @@
-import os
+import logging
+import re
 import secrets
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from pydantic import BaseModel
-from google.oauth2 import id_token
-from google.auth.transport import requests as google_requests
 
-from .. import models, auth, database
+from fastapi import APIRouter, Depends, HTTPException, status
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from backend import models
+from backend.config import settings
+from backend.database import get_db
+from backend.schemas import GoogleLoginRequest, LoginRequest, RegisterRequest
+from backend.security import create_access_token, hash_password, verify_password
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-# --- DATA MODELS (The "Forms") ---
 
-
-class UserCreate(BaseModel):
-    username: str
-    email: str
-    password: str
-
-
-class UserLogin(BaseModel):
-    username: str
-    password: str
-
-
-class GoogleToken(BaseModel):
-    credential: str
-
-# --- ROUTES ---
-
-
-@router.post("/register")
-def register(user_data: UserCreate, db: Session = Depends(database.get_db)):
-    # 1. Check if username is taken
-    existing_user = db.query(models.User).filter(
-        models.User.username == user_data.username).first()
-    if existing_user:
-        raise HTTPException(status_code=400, detail="Username already exists")
-
-    # 2. DEBUG PRINT: See what is actually arriving
-    print(f"--- REGISTRATION DEBUG ---")
-    print(f"Received password: {user_data.password}")
-    print(f"Password Length: {len(user_data.password)} bytes")
-
-    # 3. Hash the password (Passing ONLY the string)
-    try:
-        hashed_pass = auth.get_password_hash(user_data.password)
-    except Exception as e:
-        print(f"HASHING FAILED: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Security Error: {str(e)}")
-
-    # 4. Create and save the new user
-    new_user = models.User(
-        username=user_data.username,
-        email=user_data.email,
-        hashed_password=hashed_pass
-    )
-
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-
-    return {"message": "User created successfully! Please login."}
-
-
-@router.post("/login")
-def login(login_data: UserLogin, db: Session = Depends(database.get_db)):
-    # 1. Find user by username
-    user = db.query(models.User).filter(
-        models.User.username == login_data.username).first()
-
-    # 2. Verify password
-    if not user or not auth.verify_password(login_data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password"
-        )
-
-    # 3. Generate the "Key" (JWT Token)
-    access_token = auth.create_access_token(data={"sub": user.username})
-
+def _token_response(user: models.User) -> dict:
     return {
-        "access_token": access_token,
+        "access_token": create_access_token(user.id),
         "token_type": "bearer",
-        "username": user.username
+        "username": user.username,
     }
 
 
-# --- NEW GOOGLE LOGIN ROUTE ---
+def _username_taken(db: Session, username: str) -> bool:
+    return (
+        db.query(models.User.id).filter(func.lower(models.User.username) == username.lower()).first()
+        is not None
+    )
+
+
+def _email_taken(db: Session, email: str) -> bool:
+    return db.query(models.User.id).filter(models.User.email == email).first() is not None
+
+
+@router.post("/register")
+def register(data: RegisterRequest, db: Session = Depends(get_db)):
+    if _username_taken(db, data.username):
+        raise HTTPException(status_code=400, detail="That username is already taken.")
+    if _email_taken(db, data.email):
+        raise HTTPException(status_code=400, detail="An account with that email already exists.")
+
+    user = models.User(
+        username=data.username,
+        email=data.email,
+        hashed_password=hash_password(data.password),
+    )
+    db.add(user)
+    try:
+        db.commit()
+    except IntegrityError:
+        # Someone registered the same name/email a moment ago.
+        db.rollback()
+        raise HTTPException(status_code=400, detail="That username or email is already taken.")
+    db.refresh(user)
+    return _token_response(user)
+
+
+@router.post("/login")
+def login(data: LoginRequest, db: Session = Depends(get_db)):
+    identifier = data.username.strip()
+    query = db.query(models.User)
+    if "@" in identifier:
+        user = query.filter(models.User.email == identifier.lower()).first()
+    else:
+        user = query.filter(func.lower(models.User.username) == identifier.lower()).first()
+
+    if not verify_password(data.password, user.hashed_password if user else None) or user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password.",
+        )
+    return _token_response(user)
+
+
+def _username_from_google(db: Session, name: str | None, email: str) -> str:
+    base = re.sub(r"[^A-Za-z0-9_.-]", "", (name or "").replace(" ", "_"))[:24]
+    if len(base) < 3:
+        base = re.sub(r"[^A-Za-z0-9_.-]", "", email.split("@")[0])[:24]
+    if len(base) < 3:
+        base = "learner"
+
+    candidate = base
+    for _ in range(20):
+        if not _username_taken(db, candidate):
+            return candidate
+        candidate = f"{base}{secrets.randbelow(10_000):04d}"
+    return f"learner{secrets.token_hex(4)}"
+
 
 @router.post("/google")
-def google_login(token: GoogleToken, db: Session = Depends(database.get_db)):
+def google_login(data: GoogleLoginRequest, db: Session = Depends(get_db)):
+    if not settings.google_client_id:
+        raise HTTPException(status_code=503, detail="Google sign-in is not configured.")
+
     try:
-        # 1. Verify the Google Token
-        client_id = os.getenv("GOOGLE_CLIENT_ID")
-        if not client_id:
-            raise HTTPException(
-                status_code=500, detail="Google Client ID missing from .env")
-
         idinfo = id_token.verify_oauth2_token(
-            token.credential,
-            google_requests.Request(),
-            client_id
+            data.credential, google_requests.Request(), settings.google_client_id
         )
-
-        # 2. Extract user info
-        email = idinfo.get('email')
-        # Fallback to email prefix if no name
-        name = idinfo.get('name', email.split('@')[0])
-
-        # 3. Check if user already exists (checking both email and username just in case)
-        user = db.query(models.User).filter(
-            (models.User.email == email) | (models.User.username == email)
-        ).first()
-
-        # 4. If they are new, create their Promitheus account!
-        if not user:
-            # Generate a secure random dummy password
-            dummy_pwd = secrets.token_urlsafe(32)
-            hashed_pass = auth.get_password_hash(dummy_pwd)
-
-            user = models.User(
-                username=name,  # Using their Google name or email prefix
-                email=email,
-                hashed_password=hashed_pass,
-                xp=0,              # Ensure these default stats match your models.py
-                streak=0,
-                daily_xp=0,
-                daily_lessons=0
-            )
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-
-        # 5. Issue your standard Promitheus JWT
-        access_token = auth.create_access_token(data={"sub": user.username})
-
-        return {
-            "access_token": access_token,
-            "token_type": "bearer",
-            "username": user.username
-        }
-
     except ValueError:
-        raise HTTPException(status_code=401, detail="Invalid Google token")
-    except Exception as e:
-        print(f"Google Login Error: {e}")
-        raise HTTPException(
-            status_code=500, detail="Internal server error during Google Login")
+        raise HTTPException(status_code=401, detail="Invalid Google sign-in. Please try again.")
+
+    google_sub = idinfo.get("sub")
+    email = (idinfo.get("email") or "").lower()
+    if not google_sub or not email or not idinfo.get("email_verified"):
+        raise HTTPException(status_code=401, detail="Your Google account email is not verified.")
+
+    user = db.query(models.User).filter(models.User.google_sub == google_sub).first()
+    if user is None:
+        if _email_taken(db, email):
+            # Don't auto-link: the existing account's email was never verified, so linking
+            # would let whoever registered it first get into this Google user's account.
+            raise HTTPException(
+                status_code=409,
+                detail="An account with this email already exists. Log in with your username and password.",
+            )
+        user = models.User(
+            username=_username_from_google(db, idinfo.get("name"), email),
+            email=email,
+            google_sub=google_sub,
+            hashed_password=None,
+        )
+        db.add(user)
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            logger.warning("Google sign-up collided with an existing account")
+            raise HTTPException(status_code=409, detail="Could not create your account. Please try again.")
+        db.refresh(user)
+
+    return _token_response(user)

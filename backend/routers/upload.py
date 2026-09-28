@@ -1,92 +1,106 @@
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
+import io
+import logging
+import re
+from datetime import timedelta
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from pypdf import PdfReader
+from pypdf.errors import PdfReadError
+from sqlalchemy import func
 from sqlalchemy.orm import Session
-import fitz
+
+from backend import ai_service, gamification, models
+from backend.config import settings
 from backend.database import get_db
-from backend import models, ai_service
 from backend.deps import get_current_user
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/upload", tags=["Upload"])
 
+ALLOWED_EXTENSIONS = {".pdf", ".txt"}
+
+
+def _split_filename(filename: str | None) -> tuple[str, str]:
+    # Some browsers send a full path; keep only the file's own name.
+    name = re.split(r"[\\/]", filename or "")[-1].strip()
+    stem, dot, ext = name.rpartition(".")
+    if not dot:
+        return name, ""
+    return stem, "." + ext.lower()
+
+
+def _extract_text(data: bytes, extension: str) -> str:
+    if extension == ".txt":
+        for encoding in ("utf-8-sig", "cp1252"):
+            try:
+                return data.decode(encoding)
+            except UnicodeDecodeError:
+                continue
+        raise HTTPException(status_code=400, detail="Could not read this text file. Save it as UTF-8 and try again.")
+
+    try:
+        reader = PdfReader(io.BytesIO(data))
+        if reader.is_encrypted:
+            raise HTTPException(status_code=400, detail="This PDF is password-protected.")
+        return "\n".join(page.extract_text() or "" for page in reader.pages)
+    except HTTPException:
+        raise
+    except (PdfReadError, ValueError, KeyError, TypeError):
+        raise HTTPException(status_code=400, detail="Could not read this PDF. It may be damaged.")
+    except Exception:
+        logger.exception("Unexpected PDF parsing error")
+        raise HTTPException(status_code=400, detail="Could not read this PDF.")
+
 
 @router.post("/lecture")
-async def upload_lecture(
+def upload_lecture(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    user: models.User = Depends(get_current_user),
 ):
-    content = await file.read()
-    text = ""
+    stem, extension = _split_filename(file.filename)
+    if extension not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Unsupported file type. Upload a .pdf or .txt file.")
 
-    try:
-        if file.filename.endswith(".pdf"):
-            doc = fitz.open(stream=content, filetype="pdf")
-            for page in doc:
-                text += page.get_text()
-        elif file.filename.endswith(".txt"):
-            text = content.decode("utf-8")
-        else:
-            raise HTTPException(
-                status_code=400, detail="Unsupported file type.")
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"File reading error: {str(e)}")
+    data = file.file.read(settings.max_upload_bytes + 1)
+    if len(data) > settings.max_upload_bytes:
+        limit_mb = settings.max_upload_bytes // (1024 * 1024)
+        raise HTTPException(status_code=413, detail=f"File is too large (max {limit_mb} MB).")
 
+    since = gamification.now_utc() - timedelta(days=1)
+    uploads_today = (
+        db.query(func.count(models.SourceMaterial.id))
+        .filter(models.SourceMaterial.user_id == user.id, models.SourceMaterial.created_at >= since)
+        .scalar()
+    )
+    if uploads_today >= settings.daily_upload_limit:
+        raise HTTPException(status_code=429, detail="Daily upload limit reached. Try again tomorrow.")
+    user_id = user.id
+    # End the transaction so no DB connection sits idle during the (slow) AI call.
+    db.commit()
+
+    text = _extract_text(data, extension)
     if not text.strip():
         raise HTTPException(
-            status_code=400, detail="The uploaded file seems to be empty.")
-
-    new_material = models.SourceMaterial(
-        user_id=current_user.id,
-        title=file.filename,
-        raw_text=text
-    )
-    db.add(new_material)
-    db.flush()  # Flush gets the ID without committing permanently
+            status_code=400,
+            detail="No readable text found. Scanned PDFs (images of pages) aren't supported yet.",
+        )
 
     try:
-        ai_data = ai_service.generate_learning_content(text)
+        sections = ai_service.generate_learning_content(text)
+    except ai_service.AIServiceError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
 
-        # 🌟 THE FIX: Map exactly to the 6 new keys the AI is generating
-        sections = [
-            ("Free Recall", ai_data.get('level_1_short_answer', [])),
-            ("Fill in the Blanks", ai_data.get('level_2_fill_blank', [])),
-            ("Multiple Choice", ai_data.get('level_3_mcq', [])),
-            ("True or False", ai_data.get('level_4_true_false', [])),
-            ("Rearrange Concepts", ai_data.get(
-                'level_5_rearrange', [])),  # <-- NEW LEVEL
-            ("Explain Concepts", ai_data.get('level_6_explain', []))
-        ]
+    material = models.SourceMaterial(user_id=user_id, title=(stem or "Untitled lecture")[:255], raw_text=text)
+    db.add(material)
+    total_questions = 0
+    for order, (title, qtype, questions) in enumerate(sections, start=1):
+        lesson = models.Lesson(title=title, order_in_unit=order)
+        material.lessons.append(lesson)
+        for content in questions:
+            lesson.questions.append(models.Question(question_type=qtype, content=content))
+        total_questions += len(questions)
+    db.commit()
 
-        # 🛡️ THE SAFETY CHECK: Make sure we actually extracted questions!
-        total_questions = sum(len(q_list) for _, q_list in sections)
-        if total_questions == 0:
-            raise ValueError(
-                "The AI generated the lesson but failed to format the questions correctly. Please try again.")
-
-        for i, (sec_title, q_list) in enumerate(sections):
-            # 1. Create the Section Node
-            new_lesson = models.Lesson(
-                material_id=new_material.id,
-                title=sec_title,
-                unit_number=new_material.id,
-                order_in_unit=i + 1
-            )
-            db.add(new_lesson)
-            db.flush()
-
-            # 2. Add all questions for this specific level
-            for q in q_list:
-                new_question = models.Question(
-                    lesson_id=new_lesson.id,
-                    question_type=q.get('type', 'multiple_choice'),
-                    content=q
-                )
-                db.add(new_question)
-
-        db.commit()
-
-        return {"status": "success", "message": f"Unit created with {total_questions} total questions!"}
-
-    except Exception as e:
-        db.rollback()  # If anything fails, undo the whole database transaction!
-        raise HTTPException(status_code=500, detail=f"AI Error: {str(e)}")
+    return {"status": "success", "message": f"Unit created with {total_questions} questions!"}

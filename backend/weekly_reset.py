@@ -1,79 +1,85 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+"""Weekly league promotion/demotion.
 
-from .models import User
-from .database import SQLALCHEMY_DATABASE_URL
-from .routers.users import LEAGUE_ORDER
+Runs from Vercel Cron (GET /api/cron/weekly-reset, Mondays 00:00 UTC). Each ISO week is
+processed at most once, so retries or duplicate invocations are harmless.
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
-SessionLocal = sessionmaker(bind=engine)
+Run manually:  python -m backend.weekly_reset [--force]
+"""
+import logging
+from datetime import datetime, timedelta
+
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from backend import gamification
+from backend.models import LeagueReset, User
+
+logger = logging.getLogger(__name__)
 
 
-def process_weekly_shuffle():
-    db = SessionLocal()
-    try:
-        print("\n📸 Taking a snapshot of all users...")
-        # 1. Fetch ALL users once to prevent the "Domino Effect"
-        all_users = db.query(User).all()
+def week_key_for(now: datetime) -> str:
+    """The ISO week that just ended (the cron fires right after Sunday)."""
+    year, week, _ = (now - timedelta(days=1)).isocalendar()
+    return f"{year}-W{week:02d}"
 
-        # 2. Group them by their CURRENT league in Python memory
-        league_groups = {league: [] for league in LEAGUE_ORDER}
-        for user in all_users:
-            league_name = user.league or "Paper"
-            if league_name in league_groups:
-                league_groups[league_name].append(user)
+
+def process_weekly_shuffle(db: Session, now: datetime | None = None, force: bool = False) -> dict:
+    now = now or gamification.now_utc()
+    week_key = week_key_for(now)
+
+    if not force:
+        # Claim the week first. A concurrent second run blocks on this primary key and then fails.
+        db.add(LeagueReset(week_key=week_key))
+        try:
+            db.flush()
+        except IntegrityError:
+            db.rollback()
+            logger.info("League reset for %s already done; skipping", week_key)
+            return {"status": "skipped", "week": week_key}
+
+    # 1. Snapshot every user, grouped by their current league, before changing anything.
+    users = db.query(User).order_by(User.weekly_xp.desc(), User.id).with_for_update().all()
+    groups: dict[str, list[User]] = {league: [] for league in gamification.LEAGUE_ORDER}
+    for user in users:
+        groups[gamification.normalize_league(user.league)].append(user)
+
+    # 2. Decide each user's new league from the snapshot.
+    promoted = demoted = 0
+    for league, members in groups.items():
+        count = len(members)
+        promote, demote = gamification.zone_sizes(league, count)
+        for rank, user in enumerate(members, start=1):
+            zone = gamification.zone_for(rank, count, user.weekly_xp, promote, demote)
+            if zone == "promote":
+                user.league = gamification.next_league(league)
+                promoted += 1
+            elif zone == "demote":
+                user.league = gamification.previous_league(league)
+                demoted += 1
             else:
-                league_groups["Paper"].append(user)
+                user.league = league
+            user.weekly_xp = 0
 
-        # 3. Process each group safely
-        for league_name in LEAGUE_ORDER:
-            print(f"\nProcessing {league_name} League...")
-
-            # Sort the users in THIS league by weekly_xp (highest to lowest)
-            users_in_league = sorted(
-                league_groups[league_name],
-                key=lambda u: (u.weekly_xp or 0),
-                reverse=True
-            )
-
-            if not users_in_league:
-                print("  No users found in this league.")
-                continue
-
-            for index, user in enumerate(users_in_league):
-                rank = index + 1
-                # Use their original league index
-                current_index = LEAGUE_ORDER.index(league_name)
-
-                # --- PROMOTION ZONE (Top 10) ---
-                if rank <= 10 and current_index < len(LEAGUE_ORDER) - 1:
-                    user.league = LEAGUE_ORDER[current_index + 1]
-                    print(f"  🔼 {user.username} promoted to {user.league}")
-
-                # --- DEMOTION ZONE (Rank 21+) ---
-                elif rank > 20 and current_index > 0:
-                    user.league = LEAGUE_ORDER[current_index - 1]
-                    print(f"  🔽 {user.username} demoted to {user.league}")
-
-                else:
-                    print(f"  🛡️ {user.username} remains in {league_name}")
-
-                # --- RESET WEEKLY & DAILY STATS ---
-                user.weekly_xp = 0
-                user.daily_xp = 0
-                user.daily_lessons = 0
-
-        # 4. Save ALL the calculated changes to the database at the very end
-        db.commit()
-        print("\n✅ Weekly shuffle completed! Everyone is reset for Monday. 🚀")
-
-    except Exception as e:
-        print(f"\n❌ Error during shuffle: {e}")
-        db.rollback()
-    finally:
-        db.close()
+    record = db.get(LeagueReset, week_key) or LeagueReset(week_key=week_key)
+    record.promoted, record.demoted, record.ran_at = promoted, demoted, now
+    db.merge(record)
+    db.commit()
+    logger.info("League reset %s: %d promoted, %d demoted", week_key, promoted, demoted)
+    return {"status": "done", "week": week_key, "promoted": promoted, "demoted": demoted, "users": len(users)}
 
 
 if __name__ == "__main__":
-    print("Starting Weekly League Shuffle...")
-    process_weekly_shuffle()
+    import argparse
+
+    from backend.database import SessionLocal
+
+    logging.basicConfig(level=logging.INFO)
+    parser = argparse.ArgumentParser(description="Run the weekly league reset now.")
+    parser.add_argument("--force", action="store_true", help="run even if this week was already processed")
+    args = parser.parse_args()
+
+    session = SessionLocal()
+    try:
+        print(process_weekly_shuffle(session, force=args.force))
+    finally:
+        session.close()

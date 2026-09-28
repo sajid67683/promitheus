@@ -36,3 +36,10 @@ data/raw_uploads/*
 .vscode/
 .DS_Store
 Thumbs.db
+# ==========================================
+# Tooling
+# ==========================================
+.vercel/
+.pytest_cache/
+.env.*
+!.env.example

@@ -1,28 +1,29 @@
-import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
-from dotenv import load_dotenv
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.pool import NullPool
 
-# Load the environment variables from your .env file
-load_dotenv()
+from backend.config import settings
 
-# Get the database URL
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Create the SQLAlchemy engine
-# Change this line in backend/database.py
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, 
-    connect_args={"connect_timeout": 10} 
-)
+class Base(DeclarativeBase):
+    pass
 
-# Create a sessionmaker to talk to the database
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# This Base class is what all our database models will inherit from
-Base = declarative_base()
+def _engine_kwargs(url: str) -> dict:
+    if url.startswith("sqlite"):
+        return {"connect_args": {"check_same_thread": False}}
 
-# A helper function to get the database session for our API routes
+    kwargs = {"pool_pre_ping": True, "connect_args": {"connect_timeout": 10}}
+    if settings.on_vercel:
+        # Serverless instances come and go; don't hold idle connections open.
+        # Point DATABASE_URL at your provider's pooled endpoint (e.g. Neon "-pooler").
+        kwargs["poolclass"] = NullPool
+    return kwargs
+
+
+_url = settings.database_url
+engine = create_engine(_url, **_engine_kwargs(_url))
+SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
 
 def get_db():
