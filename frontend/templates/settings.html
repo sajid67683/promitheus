@@ -1,0 +1,140 @@
+{% extends "_app.html" %}
+{% from "_icons.html" import icon %}
+{% block page_title %}Settings{% endblock %}
+{% block side_wrapper %}{% endblock %}
+
+{% macro section(id, title, description) -%}
+<section id="{{ id }}" class="panel p-5 sm:p-6 scroll-mt-24" aria-labelledby="{{ id }}-title">
+  <h2 id="{{ id }}-title" class="text-lg font-bold">{{ title }}</h2>
+  {% if description %}<p class="mt-1 text-sm text-muted">{{ description }}</p>{% endif %}
+  <div class="mt-5">{{ caller() }}</div>
+</section>
+{%- endmacro %}
+
+{% block content %}
+<h1 class="text-2xl sm:text-3xl font-extrabold">Settings</h1>
+<div class="mt-6 flex flex-col gap-5">
+
+  {% call section("profile", "Profile", "Your username is shown on leaderboards.") %}
+  <form data-profile-form class="flex flex-col gap-5" novalidate>
+    <div>
+      <label class="field-label" for="username">Username</label>
+      <input class="input" id="username" name="username" value="{{ user.username }}" required maxlength="30" autocomplete="username">
+    </div>
+    <fieldset>
+      <legend class="field-label">Avatar</legend>
+      <div class="grid grid-cols-4 sm:grid-cols-6 gap-3" data-avatar-grid>
+        {% set current = user.avatar or ("bottts:" ~ (user.username|replace(".", "-"))) %}
+        {% for style in avatar_styles %}
+          {% for seed in [user.username, "ember", "nova"] %}
+          {% set value = style ~ ":" ~ (seed|replace(".", "-")) %}
+          <label class="justify-self-center inline-grid cursor-pointer rounded-full has-checked:ring-4 has-checked:ring-brand-fill has-checked:ring-offset-2 has-checked:ring-offset-surface has-focus-visible:outline-3 has-focus-visible:outline-brand-fill">
+            <input type="radio" name="avatar" value="{{ value }}" class="sr-only" {% if value == current %}checked{% endif %}>
+            <img src="https://api.dicebear.com/9.x/{{ style }}/svg?seed={{ seed|replace('.', '-')|urlencode }}&size=64&radius=50&backgroundColor=d7cffc,ffd9bf,c7f0d8"
+                 alt="{{ style|replace('-', ' ') }} avatar" width="64" height="64" class="size-14 sm:size-16 rounded-full bg-surface-2">
+          </label>
+          {% endfor %}
+        {% endfor %}
+      </div>
+    </fieldset>
+    <p class="field-error" role="alert" data-form-error hidden></p>
+    <div><button type="submit" class="btn btn-primary">Save profile</button></div>
+  </form>
+  {% endcall %}
+
+  {% call section("learning", "Daily goal", "How much XP you aim to earn each day.") %}
+  <form data-goal-form>
+    <fieldset class="grid sm:grid-cols-2 gap-3">
+      <legend class="sr-only">Daily goal</legend>
+      {% for xp, label, text in goal_options %}
+      <label class="choice-card">
+        <input type="radio" name="goal" value="{{ xp }}" class="sr-only" {% if xp == user.daily_xp_goal %}checked{% endif %}>
+        <span class="flex-1"><span class="block font-bold">{{ label }} · {{ xp }} XP</span><span class="block text-sm text-muted">{{ text }}</span></span>
+      </label>
+      {% endfor %}
+    </fieldset>
+  </form>
+  {% endcall %}
+
+  {% call section("appearance", "Appearance and sound", none) %}
+  <div class="flex flex-col gap-6">
+    <fieldset>
+      <legend class="field-label">Theme</legend>
+      <div class="grid grid-cols-3 gap-2" data-theme-options>
+        {% for value, label, ic in [("system", "System", "sliders"), ("light", "Light", "sun"), ("dark", "Dark", "moon")] %}
+        <label class="choice-card justify-center py-3!">
+          <input type="radio" name="theme" value="{{ value }}" class="sr-only">{{ icon(ic, "size-5") }}<span class="font-semibold">{{ label }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </fieldset>
+    <div class="flex items-center justify-between gap-4">
+      <div>
+        <p class="font-semibold" id="sound-label">Sound effects</p>
+        <p class="text-sm text-muted">Soft tones when you answer and finish a lesson.</p>
+      </div>
+      <button type="button" role="switch" aria-checked="true" aria-labelledby="sound-label" data-sound-switch
+              class="relative w-14 h-8 rounded-full bg-line-strong aria-checked:bg-brand-fill transition-colors shrink-0">
+        <span class="absolute top-1 left-1 size-6 rounded-full bg-white shadow transition-transform" data-knob></span>
+      </button>
+    </div>
+    <div>
+      <label class="field-label" for="volume">Volume</label>
+      <div class="flex items-center gap-3">
+        {{ icon("volume-off", "size-5 text-faint") }}
+        <input type="range" id="volume" min="0.1" max="1" step="0.1" class="flex-1 accent-brand-fill h-2" data-volume>
+        {{ icon("volume", "size-5 text-faint") }}
+        <button type="button" class="btn btn-secondary btn-sm" data-sound-preview>Play</button>
+      </div>
+    </div>
+  </div>
+  {% endcall %}
+
+  {% call section("security", "Password and sessions", none) %}
+  <form data-password-form class="flex flex-col gap-5" novalidate>
+    {% if me.has_password %}
+    <div>
+      <label class="field-label" for="current_password">Current password</label>
+      <input class="input" id="current_password" name="current_password" type="password" autocomplete="current-password" required>
+    </div>
+    {% else %}
+    <p class="text-sm text-muted">You sign in with Google. Set a password to also log in with your username.</p>
+    {% endif %}
+    <div>
+      <label class="field-label" for="new_password">New password</label>
+      <input class="input" id="new_password" name="new_password" type="password" autocomplete="new-password" minlength="8" required aria-describedby="np-hint">
+      <p class="field-hint" id="np-hint">At least 8 characters. Other devices will be signed out.</p>
+    </div>
+    <p class="field-error" role="alert" data-form-error hidden></p>
+    <div><button type="submit" class="btn btn-primary">{{ "Change password" if me.has_password else "Set password" }}</button></div>
+  </form>
+  <div class="mt-6 pt-6 border-t-[1.5px] border-line flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+    <div>
+      <p class="font-semibold">Sign out everywhere</p>
+      <p class="text-sm text-muted">Logs out every device, including this one.</p>
+    </div>
+    <button type="button" class="btn btn-secondary" data-sign-out-all>Sign out everywhere</button>
+  </div>
+  {% endcall %}
+
+  <section class="panel p-5 sm:p-6 border-bad-fill/40!" aria-labelledby="danger-title">
+    <h2 id="danger-title" class="text-lg font-bold text-bad">Delete account</h2>
+    <p class="mt-1 text-sm text-muted">Permanently deletes your account, lectures, lessons and progress. This can't be undone.</p>
+    <button type="button" class="btn btn-bad mt-5" data-delete-account>Delete my account</button>
+  </section>
+</div>
+
+<dialog class="modal" data-delete-dialog aria-labelledby="delete-title">
+  <form method="dialog" class="p-6">
+    <h2 id="delete-title" class="text-xl font-bold">Delete your account?</h2>
+    <p class="mt-2 text-muted">Type <strong class="text-ink">{{ user.username }}</strong> to confirm.</p>
+    <input class="input mt-4" name="confirm" autocomplete="off" aria-label="Your username" data-delete-input>
+    <div class="mt-6 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+      <button value="cancel" formnovalidate class="btn btn-secondary">Cancel</button>
+      <button value="delete" class="btn btn-bad" data-delete-confirm disabled>Delete account</button>
+    </div>
+  </form>
+</dialog>
+{% endblock %}
+
+{% block scripts %}<script type="module" src="/static/js/settings.js?v={{ settings.asset_version }}"></script>{% endblock %}

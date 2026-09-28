@@ -1,0 +1,15 @@
+Photosynthesis: How Plants Turn Light Into Food
+
+Photosynthesis is the process by which plants, algae and some bacteria convert light energy into chemical energy stored in glucose. It takes place mainly in the leaves, inside organelles called chloroplasts. Chloroplasts contain the green pigment chlorophyll, which absorbs red and blue light and reflects green light, which is why leaves look green.
+
+The overall equation is: six molecules of carbon dioxide plus six molecules of water, using light energy, produce one molecule of glucose and six molecules of oxygen. Carbon dioxide enters the leaf through small pores called stomata, and water is carried up from the roots through the xylem.
+
+Photosynthesis happens in two linked stages.
+
+Stage 1: the light-dependent reactions. These take place in the thylakoid membranes of the chloroplast. Chlorophyll absorbs light, which excites electrons. Water molecules are split in a process called photolysis, releasing oxygen as a by-product, along with hydrogen ions and electrons. The energy from the excited electrons is used to make ATP and NADPH, two energy-carrying molecules.
+
+Stage 2: the Calvin cycle (the light-independent reactions). This takes place in the stroma, the fluid around the thylakoids. The enzyme RuBisCO fixes carbon dioxide by attaching it to a five-carbon sugar called RuBP. Using the energy from ATP and the electrons carried by NADPH, the fixed carbon is reduced to form a three-carbon sugar (G3P). Some G3P leaves the cycle to build glucose, and the rest is used to regenerate RuBP so the cycle can continue.
+
+Limiting factors. The rate of photosynthesis is limited by whichever factor is in shortest supply: light intensity, carbon dioxide concentration, or temperature. Increasing light intensity raises the rate until another factor becomes limiting. Temperature matters because the Calvin cycle is driven by enzymes; too cold slows them down, and too hot denatures them.
+
+Why it matters. Photosynthesis provides the oxygen in our atmosphere and is the starting point of almost every food chain. It also removes carbon dioxide from the air, which links it closely to the global carbon cycle and to climate. Cellular respiration is roughly the reverse process: it uses glucose and oxygen to release energy, producing carbon dioxide and water.

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+
+{% set NAV = [
+  ("learn", "/dashboard", "Learn", "home"),
+  ("practice", "/practice", "Practice", "target"),
+  ("library", "/library", "Library", "book"),
+  ("leagues", "/leaderboard", "Leagues", "trophy"),
+  ("quests", "/quests", "Quests", "gift"),
+  ("profile", "/profile", "Profile", "user"),
+] %}
+{% set TABS = ["learn", "practice", "library", "leagues", "profile"] %}
+
+{% block title %}{% block page_title %}{% endblock %} · Promitheus{% endblock %}
+
+{% block body %}
+<div class="min-h-dvh lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
+  <aside class="hidden lg:flex sticky top-0 h-dvh flex-col gap-6 border-r-[1.5px] border-line px-4 py-6">
+    <a href="/dashboard" class="flex items-center gap-2.5 px-3 py-1 rounded-xl">
+      {% include "_logo.html" %}
+      <span class="text-[1.35rem] font-extrabold tracking-tight">Promitheus</span>
+    </a>
+    <nav aria-label="Main" class="flex flex-col gap-1.5">
+      {% for key, href, label, ic in NAV %}
+      <a href="{{ href }}" class="nav-link" {% if active == key %}aria-current="page"{% endif %}>
+        {{ icon(ic, "size-[1.35rem]") }}<span>{{ label }}</span>
+      </a>
+      {% endfor %}
+    </nav>
+    <div class="mt-auto flex flex-col gap-1.5">
+      <a href="/settings" class="nav-link" {% if request.url.path == "/settings" %}aria-current="page"{% endif %}>
+        {{ icon("sliders", "size-[1.35rem]") }}<span>Settings</span>
+      </a>
+    </div>
+  </aside>
+
+  <div class="min-w-0 flex flex-col">
+    <header class="sticky top-0 z-40 bg-paper/85 backdrop-blur-md border-b-[1.5px] border-line lg:border-transparent">
+      <div class="mx-auto w-full max-w-6xl px-4 h-16 flex items-center gap-1 sm:gap-2">
+        <a href="/dashboard" class="lg:hidden flex items-center gap-2 mr-auto" aria-label="Promitheus home">
+          {% include "_logo.html" %}
+          <span class="text-lg font-extrabold tracking-tight max-sm:sr-only">Promitheus</span>
+        </a>
+        <div class="hidden lg:block mr-auto"></div>
+        <a href="/streaks" class="stat-pill text-ember" title="Day streak">
+          {{ icon("flame", "size-5", filled=me.streak > 0) }}
+          <span>{{ me.streak }}</span><span class="sr-only">day streak</span>
+        </a>
+        <a href="/quests" class="stat-pill text-gold" title="XP today (goal {{ me.goals.daily_xp }})">
+          {{ icon("zap", "size-5", filled=true) }}
+          <span>{{ me.xp }}</span><span class="sr-only">total XP</span>
+        </a>
+        <button type="button" class="icon-btn" data-sound-toggle aria-pressed="true" title="Sound">
+          <span data-sound-on>{{ icon("volume", "size-5") }}</span>
+          <span data-sound-off hidden>{{ icon("volume-off", "size-5") }}</span>
+          <span class="sr-only">Sound effects</span>
+        </button>
+        <a href="/profile" class="ml-1 shrink-0 rounded-full" title="Your profile">
+          <img src="{{ me.avatar_url }}" alt="" width="36" height="36" class="size-9 rounded-full bg-surface-2">
+          <span class="sr-only">Your profile</span>
+        </a>
+      </div>
+    </header>
+
+    <div class="mx-auto w-full max-w-6xl px-4 pt-4 pb-28 lg:pb-16 flex gap-10">
+      <main id="main" class="flex-1 min-w-0 {% block main_width %}max-w-2xl{% endblock %} mx-auto">
+        {% block content %}{% endblock %}
+      </main>
+      {% block side_wrapper %}
+      <aside class="hidden xl:flex flex-col gap-4 w-80 shrink-0" aria-label="Your progress">
+        {% block side %}{% include "_side_panel.html" %}{% endblock %}
+      </aside>
+      {% endblock %}
+    </div>
+  </div>
+</div>
+
+<nav aria-label="Main" class="lg:hidden fixed z-50 bottom-0 inset-x-0 border-t-[1.5px] border-line bg-surface pb-[env(safe-area-inset-bottom)]">
+  <div class="flex">
+    {% for key, href, label, ic in NAV if key in TABS %}
+    <a href="{{ href }}" class="tab-link" {% if active == key %}aria-current="page"{% endif %}>
+      {{ icon(ic, "size-6") }}<span>{{ label }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</nav>
+{% endblock %}

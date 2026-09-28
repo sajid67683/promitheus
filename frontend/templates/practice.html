@@ -1,0 +1,42 @@
+{% extends "_app.html" %}
+{% from "_icons.html" import icon %}
+{% block page_title %}Practice{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl sm:text-3xl font-extrabold">Practice</h1>
+
+{% if mistakes %}
+<section class="mt-6 panel p-6 flex flex-col sm:flex-row sm:items-center gap-5">
+  <span class="grid place-items-center size-14 rounded-2xl bg-bad-soft text-bad shrink-0">{{ icon("target", "size-7") }}</span>
+  <div class="flex-1">
+    <h2 class="text-lg font-bold">{{ mistakes|length }} mistake{{ "" if mistakes|length == 1 else "s" }} to fix</h2>
+    <p class="text-muted">Get them right in a practice round to clear them. Each one you fix for the first time is worth 5 XP.</p>
+  </div>
+  <a href="/practice/session" class="btn btn-primary shrink-0">Practice {{ [mistakes|length, 10]|min }} now</a>
+</section>
+
+<h2 class="mt-10 text-lg font-bold">Your mistakes</h2>
+<ol class="mt-3 flex flex-col gap-3">
+  {% for m in mistakes %}
+  <li class="panel p-5">
+    <p class="text-sm text-muted">{{ m.unit }} · {{ m.lesson }}</p>
+    <p class="mt-1 font-semibold">{{ m.prompt }}</p>
+    <dl class="mt-3 grid gap-1 text-sm">
+      <div class="flex gap-2"><dt class="text-muted w-28 shrink-0">You answered</dt><dd class="text-bad">{{ m.your_answer or "(blank)" }}</dd></div>
+      <div class="flex gap-2"><dt class="text-muted w-28 shrink-0">Correct answer</dt><dd class="text-good font-semibold">{{ m.correct_answer }}</dd></div>
+    </dl>
+    {% if m.explanation %}
+    <p class="mt-3 text-sm text-muted flex gap-2">{{ icon("bulb", "size-4 shrink-0 mt-0.5") }}<span>{{ m.explanation }}</span></p>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ol>
+{% else %}
+<section class="mt-6 panel p-8 text-center">
+  <span class="mx-auto grid place-items-center size-16 rounded-2xl bg-good-soft text-good">{{ icon("check", "size-8") }}</span>
+  <h2 class="mt-4 text-xl font-bold">No mistakes to fix</h2>
+  <p class="mt-2 text-muted max-w-sm mx-auto">When you get a question wrong it shows up here, so you can practice it until it sticks.</p>
+  <a href="/dashboard" class="btn btn-primary mt-6">Continue learning</a>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,82 +1,59 @@
-{% extends "base.html" %}
+{% extends "_app.html" %}
+{% from "_icons.html" import icon %}
+{% block page_title %}Quests{% endblock %}
+
+{% macro quest(ic, tone, title, value, goal) -%}
+{% set done = value >= goal %}
+<li class="flex items-center gap-4 py-4">
+  <span class="grid place-items-center size-12 rounded-2xl bg-{{ tone }}-soft text-{{ tone }} shrink-0">{{ icon(ic, "size-6", filled=(ic == "zap")) }}</span>
+  <div class="flex-1 min-w-0">
+    <div class="flex justify-between gap-3 mb-2">
+      <span class="font-semibold">{{ title }}</span>
+      <span class="text-sm font-semibold tabular-nums {{ 'text-good' if done else 'text-muted' }}">{{ [value, goal]|min }} / {{ goal }}</span>
+    </div>
+    <div class="progress" role="progressbar" aria-label="{{ title }}" aria-valuemin="0" aria-valuemax="{{ goal }}" aria-valuenow="{{ [value, goal]|min }}">
+      <span class="{{ 'bg-good-fill' if done else 'bg-' ~ tone ~ '-fill' }}" style="width: {{ [100, (value * 100 / goal)|round|int]|min }}%"></span>
+    </div>
+  </div>
+  <span class="shrink-0 {{ 'text-good' if done else 'text-faint' }}" title="{{ 'Completed' if done else 'Not done yet' }}">{{ icon("check" if done else "gift", "size-6") }}</span>
+</li>
+{%- endmacro %}
 
 {% block content %}
-<div class="flex flex-col gap-6 w-full pb-10">
+<h1 class="text-2xl sm:text-3xl font-extrabold">Quests</h1>
 
-    <div class="w-full bg-[#1cb0f6] rounded-2xl p-6 text-white border-b-4 border-[#1899d6] relative overflow-hidden">
-        <div class="relative z-10">
-            <span id="dynamic-month-badge"
-                class="bg-white text-[#1cb0f6] font-black text-xs uppercase px-2 py-1 rounded-md tracking-wider">Month</span>
+<section class="mt-6 rounded-3xl bg-brand-fill text-white p-6 shadow-[0_5px_0_var(--brand-edge)]">
+  <p class="text-white/85 font-medium">{{ today|monthname }}</p>
+  <h2 class="text-2xl font-extrabold mt-1">Complete {{ me.goals.monthly_quests }} daily quests this month</h2>
+  <div class="mt-5 flex items-center gap-3">
+    <div class="progress flex-1 bg-white/25!"><span class="bg-white" style="width: {{ [100, (me.month_quests * 100 / me.goals.monthly_quests)|round|int]|min }}%"></span></div>
+    <span class="font-bold tabular-nums">{{ [me.month_quests, me.goals.monthly_quests]|min }} / {{ me.goals.monthly_quests }}</span>
+  </div>
+  <p class="mt-3 text-sm text-white/85" data-month-countdown></p>
+</section>
 
-            <h2 id="dynamic-month-title" class="text-3xl font-black mt-3 mb-1">Month Quest</h2>
-
-            <p id="monthly-timer" class="font-bold text-white/90 text-sm mb-6 flex items-center gap-1">⏱️ -- DAYS</p>
-
-            <div class="bg-black/10 rounded-2xl p-5 border-2 border-white/20">
-                <p class="font-bold mb-3">Complete 20 daily quests</p>
-                <div class="flex items-center gap-4">
-                    <div class="flex-1 bg-black/20 h-5 rounded-full overflow-hidden">
-                        <div id="monthly-bar" class="bg-white h-full rounded-full transition-all duration-1000 w-0">
-                        </div>
-                    </div>
-                    <span id="monthly-text" class="font-bold text-sm">0 / 20</span>
-                </div>
-            </div>
-        </div>
-        <div class="absolute right-[-20px] bottom-[-20px] text-9xl opacity-20 rotate-12">🏆</div>
-    </div>
-
-    <div class="border-2 border-slate-200 dark:border-slate-800 rounded-2xl p-6 bg-white dark:bg-[#0b141a]">
-        <div class="flex justify-between items-center mb-6 border-b-2 border-slate-100 dark:border-slate-800 pb-4">
-            <h3 class="font-bold text-xl text-slate-800 dark:text-slate-200">Daily Quests</h3>
-
-            <span id="daily-timer" class="text-orange-500 font-bold text-sm">⏱️ -- HOURS</span>
-        </div>
-
-        <div class="flex items-center gap-6 mb-8">
-            <div class="text-4xl drop-shadow-sm">⚡</div>
-            <div class="flex-1">
-                <p class="text-lg font-bold text-slate-700 dark:text-slate-300 mb-3">Earn 50 XP</p>
-                <div class="flex items-center gap-4">
-                    <div class="flex-1 bg-slate-200 dark:bg-slate-700 h-5 rounded-full overflow-hidden">
-                        <div id="qpage-xp-bar"
-                            class="bg-[#ffc800] h-full rounded-full transition-all duration-1000 w-0"></div>
-                    </div>
-                    <span id="qpage-xp-text" class="font-bold text-slate-400 w-12 text-right">0/50</span>
-                    <div class="text-3xl grayscale opacity-40 transition-all duration-500" id="qpage-xp-chest">🎁</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="flex items-center gap-6">
-            <div class="text-4xl drop-shadow-sm">🎯</div>
-            <div class="flex-1">
-                <p class="text-lg font-bold text-slate-700 dark:text-slate-300 mb-3">Complete 1 Lesson</p>
-                <div class="flex items-center gap-4">
-                    <div class="flex-1 bg-slate-200 dark:bg-slate-700 h-5 rounded-full overflow-hidden">
-                        <div id="qpage-lesson-bar"
-                            class="bg-[#1cb0f6] h-full rounded-full transition-all duration-1000 w-0"></div>
-                    </div>
-                    <span id="qpage-lesson-text" class="font-bold text-slate-400 w-12 text-right">0/1</span>
-                    <div class="text-3xl grayscale opacity-40 transition-all duration-500" id="qpage-lesson-chest">🎁
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<section class="mt-8 panel px-5 sm:px-6 py-2">
+  <div class="flex items-center justify-between pt-4">
+    <h2 class="text-lg font-bold">Today</h2>
+    <span class="text-sm font-semibold text-muted" data-day-countdown></span>
+  </div>
+  <ul class="divide-y-[1.5px] divide-line">
+    {{ quest("zap", "gold", "Earn " ~ me.goals.daily_xp ~ " XP", me.daily_xp, me.goals.daily_xp) }}
+    {{ quest("target", "brand", "Complete a lesson", me.daily_lessons, me.goals.daily_lessons) }}
+  </ul>
+</section>
+<p class="mt-4 text-sm text-muted">Quests reset at midnight your time. You've completed {{ me.quests_completed }} quest{{ "" if me.quests_completed == 1 else "s" }} in total.</p>
 {% endblock %}
 
-{% block right_sidebar %}
-<div class="border-2 border-slate-200 dark:border-slate-800 rounded-2xl p-5 bg-white dark:bg-[#0b141a]">
-    <h3 class="font-bold text-lg text-slate-800 dark:text-slate-200 mb-6">Monthly Badges</h3>
-
-    <div id="month-badge-card" class="flex gap-4 mb-6 opacity-50 grayscale transition-all">
-        <div class="text-4xl">🏅</div>
-        <div>
-            <p id="sidebar-month-badge" class="font-bold text-slate-700 dark:text-slate-300 text-sm">Monthly Quest</p>
-            <p id="sidebar-month-badge-status" class="text-xs text-slate-400 mt-1">Complete 20 daily quests to earn this badge</p>
-        </div>
-    </div>
-</div>
+{% block scripts %}
+<script type="module">
+  const now = new Date();
+  const midnight = new Date(now); midnight.setHours(24, 0, 0, 0);
+  const hours = Math.floor((midnight - now) / 3.6e6);
+  const mins = Math.floor(((midnight - now) % 3.6e6) / 6e4);
+  document.querySelector("[data-day-countdown]").textContent = hours ? `${hours} h ${mins} min left` : `${mins} min left`;
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const days = Math.ceil((monthEnd - now) / 8.64e7);
+  document.querySelector("[data-month-countdown]").textContent = `${days} day${days === 1 ? "" : "s"} left this month`;
+</script>
 {% endblock %}

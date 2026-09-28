@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from sqlalchemy.pool import NullPool
 
@@ -23,6 +23,14 @@ def _engine_kwargs(url: str) -> dict:
 
 _url = settings.database_url
 engine = create_engine(_url, **_engine_kwargs(_url))
+
+if _url.startswith("sqlite"):
+    # SQLite (tests, quick local runs) only enforces foreign keys when asked, like Postgres does.
+    @event.listens_for(engine, "connect")
+    def _enable_foreign_keys(dbapi_connection, _record):
+        dbapi_connection.execute("PRAGMA foreign_keys=ON")
+
+
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
 

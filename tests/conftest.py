@@ -33,8 +33,9 @@ from backend.main import app  # noqa: E402
 FAKE_QUIZ = {
     "lesson_title": "Photosynthesis",
     "level_1_short_answer": [
-        {"prompt": "What organelle performs photosynthesis?", "answer": "Chloroplast"},
-        {"prompt": "What gas do plants release?", "answer": "Oxygen"},
+        {"prompt": "What organelle performs photosynthesis?", "answer": "Chloroplast",
+         "explanation": "Chloroplasts hold chlorophyll."},
+        {"prompt": "What gas do plants release?", "answer": "Oxygen", "alternatives": ["O2"]},
     ],
     "level_2_fill_blank": [
         {"prompt": "Plants absorb ____ from the air.", "answer": "carbon dioxide"},
@@ -63,12 +64,18 @@ class FakeGemini:
 
     def __init__(self):
         self.grade = {"is_correct": True, "feedback": "Nice explanation."}
+        self.equivalent = False
         self.calls = 0
+        self.models_used = []
         self.models = SimpleNamespace(generate_content=self._generate)
 
-    def _generate(self, model, contents, config):  # noqa: ARG002
+    def _generate(self, model, contents, config):
         self.calls += 1
-        if config.system_instruction:  # grading call
+        self.models_used.append(model)
+        instructions = config.system_instruction or ""
+        if "short quiz answer" in instructions:
+            return SimpleNamespace(text=json.dumps({"equivalent": self.equivalent}))
+        if instructions:  # explanation grading
             return SimpleNamespace(text=json.dumps(self.grade))
         return SimpleNamespace(text=json.dumps(FAKE_QUIZ))
 
@@ -122,13 +129,17 @@ def restore_settings():
     vars(settings).update(saved)
 
 
-def register(client, username="alice", email=None, password="correct horse battery"):
+def register(client, username="alice", email=None, password="correct horse battery", onboarded=True):
+    """Creates a user. Returns Bearer headers (the client's cookie jar is also logged in)."""
     res = client.post(
         "/auth/register",
         json={"username": username, "email": email or f"{username}@example.com", "password": password},
     )
     assert res.status_code == 200, res.text
-    return {"Authorization": f"Bearer {res.json()['access_token']}"}
+    headers = {"Authorization": f"Bearer {res.json()['access_token']}"}
+    if onboarded:
+        assert client.patch("/users/me", headers=headers, json={"onboarded": True}).status_code == 200
+    return headers
 
 
 def upload_txt(client, headers, name="lecture.txt", text="Plants use light to make sugar."):

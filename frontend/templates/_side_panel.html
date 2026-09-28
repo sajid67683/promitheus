@@ -1,0 +1,53 @@
+{% from "_icons.html" import icon %}
+{% set goal = me.goals.daily_xp %}
+{% set goal_pct = [100, (me.daily_xp * 100 / goal)|round|int]|min %}
+<section class="panel p-5" aria-labelledby="goal-heading">
+  <div class="flex items-center justify-between mb-3">
+    <h2 id="goal-heading" class="font-bold">Daily goal</h2>
+    <a href="/settings#learning" class="text-sm font-semibold text-brand hover:underline">Change</a>
+  </div>
+  <div class="flex items-center gap-3">
+    <span class="grid place-items-center size-10 rounded-xl bg-gold-soft text-gold shrink-0">{{ icon("zap", "size-5", filled=true) }}</span>
+    <div class="flex-1 min-w-0">
+      <div class="flex justify-between text-sm mb-1.5">
+        <span class="font-semibold">{{ [me.daily_xp, goal]|min }} / {{ goal }} XP</span>
+        {% if me.daily_xp >= goal %}<span class="font-semibold text-good">Done</span>{% endif %}
+      </div>
+      <div class="progress" role="progressbar" aria-label="Daily XP goal" aria-valuemin="0" aria-valuemax="{{ goal }}" aria-valuenow="{{ [me.daily_xp, goal]|min }}">
+        <span class="bg-gold-fill" style="width: {{ goal_pct }}%"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="panel p-5" aria-labelledby="streak-heading">
+  <a href="/streaks" class="flex items-center gap-4 group">
+    <span class="grid place-items-center size-12 rounded-2xl bg-ember-soft text-ember shrink-0">{{ icon("flame", "size-6", filled=me.streak > 0) }}</span>
+    <div>
+      <h2 id="streak-heading" class="font-bold group-hover:underline">{{ me.streak }} day streak</h2>
+      <p class="text-sm text-muted">
+        {% if me.streak == 0 %}Finish a lesson today to start one.
+        {% elif me.last_lesson_date == today.isoformat() %}You studied today. See you tomorrow!
+        {% else %}Finish a lesson today to keep it going.{% endif %}
+      </p>
+    </div>
+  </a>
+</section>
+
+<section class="panel p-5" aria-labelledby="quests-heading">
+  <div class="flex items-center justify-between mb-4">
+    <h2 id="quests-heading" class="font-bold">Daily quests</h2>
+    <a href="/quests" class="text-sm font-semibold text-brand hover:underline">View all</a>
+  </div>
+  {% set lesson_done = me.daily_lessons >= me.goals.daily_lessons %}
+  <div class="flex items-center gap-3">
+    <span class="grid place-items-center size-10 rounded-xl bg-brand-soft text-brand shrink-0">{{ icon("target", "size-5") }}</span>
+    <div class="flex-1 min-w-0">
+      <div class="flex justify-between text-sm mb-1.5">
+        <span class="font-semibold">Complete a lesson</span>
+        <span class="text-muted">{{ [me.daily_lessons, 1]|min }}/1</span>
+      </div>
+      <div class="progress"><span class="bg-brand-fill" style="width: {{ 100 if lesson_done else 0 }}%"></span></div>
+    </div>
+  </div>
+</section>

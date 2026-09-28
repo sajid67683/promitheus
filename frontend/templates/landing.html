@@ -1,0 +1,99 @@
+{% extends "_public.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}Promitheus: turn lecture notes into daily practice{% endblock %}
+
+{% block content %}
+<section class="mx-auto max-w-6xl px-4 pt-8 pb-16 sm:pt-16 grid lg:grid-cols-[1.05fr_1fr] gap-12 lg:gap-16 items-center">
+  <div>
+    <h1 class="text-4xl sm:text-5xl lg:text-[3.4rem] font-extrabold leading-[1.08]">
+      Turn your lecture notes into a daily practice habit.
+    </h1>
+    <p class="mt-5 text-lg text-muted max-w-[34rem]">
+      Upload a PDF or text file. Promitheus writes six short lessons from it and brings you back
+      each day with streaks, quests and friendly leagues.
+    </p>
+    <div class="mt-8 flex flex-col sm:flex-row gap-3">
+      <a href="/signup" class="btn btn-primary btn-lg">Create a free account</a>
+      <a href="/login" class="btn btn-secondary btn-lg">I have an account</a>
+    </div>
+    <p class="mt-4 text-sm text-muted">Free to use. Works on your phone.</p>
+  </div>
+
+  {# Live demo: a real question you can answer #}
+  <div class="relative">
+    <div class="panel p-5 sm:p-7 shadow-[0_24px_60px_-30px_rgb(106_76_245/0.45)]" data-demo>
+      <div class="flex items-center gap-3 text-sm">
+        <span class="inline-flex items-center gap-1.5 rounded-lg bg-surface-2 px-2.5 py-1.5 font-medium text-muted">
+          {{ icon("file", "size-4") }} Lecture 4 · Photosynthesis.pdf
+        </span>
+        <span class="ml-auto inline-flex items-center gap-1 font-bold text-ember">{{ icon("flame", "size-4", filled=true) }} 12</span>
+        <span class="inline-flex items-center gap-1 font-bold text-gold">{{ icon("zap", "size-4", filled=true) }} 340</span>
+      </div>
+      <div class="progress h-3! mt-5"><span class="bg-good-fill" style="width: 40%"></span></div>
+      <p class="mt-6 text-sm font-semibold text-brand">Choose the right answer</p>
+      <h2 class="mt-1 text-xl font-bold">Which pigment makes leaves look green?</h2>
+      <div class="mt-5 flex flex-col gap-2.5" role="group" aria-label="Answer options">
+        {% for option in ["Carotene", "Chlorophyll", "Xanthophyll", "Anthocyanin"] %}
+        <button type="button" class="option" data-demo-option="{{ option }}"><span class="key">{{ loop.index }}</span><span>{{ option }}</span></button>
+        {% endfor %}
+      </div>
+      <div class="mt-5 rounded-2xl px-4 py-3" data-demo-feedback hidden aria-live="polite">
+        <p class="font-bold" data-demo-title></p>
+        <p class="mt-1 text-sm">Chlorophyll absorbs red and blue light and reflects green, so leaves look green.</p>
+      </div>
+      <p class="mt-5 text-sm text-muted" data-demo-hint>Try it: pick an answer.</p>
+    </div>
+  </div>
+</section>
+
+<section class="bg-surface border-y-[1.5px] border-line">
+  <div class="mx-auto max-w-6xl px-4 py-16">
+    <h2 class="text-3xl font-extrabold max-w-xl">How it works</h2>
+    <ol class="mt-10 grid md:grid-cols-3 gap-10">
+      {% for title, text in [
+        ("Upload a lecture", "Drop in lecture slides as a PDF, or paste notes into a text file."),
+        ("Work through six lessons", "Start with free recall and build up to explaining ideas in your own words."),
+        ("Come back tomorrow", "Short daily sessions, streaks and quests turn cramming into a habit."),
+      ] %}
+      <li>
+        <span class="grid place-items-center size-11 rounded-2xl bg-brand-fill text-white font-extrabold text-lg shadow-[0_4px_0_var(--brand-edge)]">{{ loop.index }}</span>
+        <h3 class="mt-4 text-lg font-bold">{{ title }}</h3>
+        <p class="mt-1.5 text-muted">{{ text }}</p>
+      </li>
+      {% endfor %}
+    </ol>
+  </div>
+</section>
+
+<section class="mx-auto max-w-6xl px-4 py-16 grid lg:grid-cols-[1fr_1.4fr] gap-10">
+  <h2 class="text-3xl font-extrabold max-w-sm">Built for how you actually study</h2>
+  <ul class="grid sm:grid-cols-2 gap-x-10 gap-y-8">
+    {% for ic, title, text in [
+      ("sparkles", "Six kinds of questions", "Recall, fill in the blank, multiple choice, true or false, ordering steps and short explanations."),
+      ("check", "Fair grading", "Small typos still count, and free-text answers are checked for meaning, not exact wording."),
+      ("target", "Practice your mistakes", "Every wrong answer lands in a review queue until you get it right."),
+      ("flame", "A reason to come back", "Daily goals, streaks and weekly leagues keep the habit going."),
+    ] %}
+    <li class="flex gap-4">
+      <span class="grid place-items-center size-11 rounded-2xl bg-brand-soft text-brand shrink-0">{{ icon(ic, "size-5") }}</span>
+      <div>
+        <h3 class="font-bold">{{ title }}</h3>
+        <p class="mt-1 text-muted">{{ text }}</p>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+
+<section class="mx-auto max-w-6xl px-4">
+  <div class="rounded-[2rem] bg-brand-fill text-white px-6 py-12 sm:px-12 flex flex-col md:flex-row md:items-center gap-6">
+    <div class="flex-1">
+      <h2 class="text-2xl sm:text-3xl font-extrabold">Your next lecture is your first lesson.</h2>
+      <p class="mt-2 text-white/85">Set up takes a minute. You can try a sample lecture first.</p>
+    </div>
+    <a href="/signup" class="btn btn-lg bg-white text-brand-edge shadow-[0_4px_0_rgb(0_0_0/0.18)]">Create a free account</a>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}<script type="module" src="/static/js/landing.js?v={{ settings.asset_version }}"></script>{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}Get started · Promitheus{% endblock %}
+
+{% block body %}
+<header class="mx-auto w-full max-w-2xl px-4 h-18 flex items-center gap-3">
+  <span class="flex items-center gap-2.5 mr-auto">{% include "_logo.html" %}<span class="text-xl font-extrabold tracking-tight">Promitheus</span></span>
+  <span class="text-sm font-semibold text-muted" data-step-label>Step 1 of 2</span>
+</header>
+
+<main id="main" class="mx-auto w-full max-w-2xl px-4 pt-4 pb-16" data-welcome>
+  <section data-welcome-step="goal">
+    <h1 class="text-3xl font-extrabold">Hi {{ me.username }}! How much do you want to study each day?</h1>
+    <p class="mt-2 text-muted">Pick a daily goal. You can change it any time in settings.</p>
+    <form data-goal-form class="mt-8">
+      <fieldset class="flex flex-col gap-3">
+        <legend class="sr-only">Daily goal</legend>
+        {% for xp, label, text in goal_options %}
+        <label class="choice-card">
+          <input type="radio" name="goal" value="{{ xp }}" class="sr-only" {% if xp == user.daily_xp_goal %}checked{% endif %}>
+          <span class="grid place-items-center size-11 rounded-xl bg-gold-soft text-gold shrink-0">{{ icon("zap", "size-5", filled=true) }}</span>
+          <span class="flex-1">
+            <span class="block font-bold">{{ label }}</span>
+            <span class="block text-sm text-muted">{{ text }}</span>
+          </span>
+          <span class="font-bold text-muted tabular-nums">{{ xp }} XP</span>
+        </label>
+        {% endfor %}
+      </fieldset>
+      <button type="submit" class="btn btn-primary btn-lg w-full sm:w-auto mt-8">Continue</button>
+    </form>
+  </section>
+
+  <section data-welcome-step="lecture" hidden>
+    <h1 class="text-3xl font-extrabold">Add your first lecture</h1>
+    <p class="mt-2 text-muted">Upload slides or notes from a class you're taking. No file handy? Try our sample lecture on photosynthesis.</p>
+    <div class="mt-8">
+      {% with show_sample=true, heading="Upload a lecture" %}{% include "_uploader.html" %}{% endwith %}
+    </div>
+    <div class="mt-6 flex items-center justify-between">
+      <button type="button" class="btn btn-ghost" data-back>{{ icon("arrow-left", "size-5") }} Back</button>
+      <button type="button" class="btn btn-ghost" data-skip>Skip for now</button>
+    </div>
+  </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="/static/js/uploader.js?v={{ settings.asset_version }}"></script>
+<script type="module" src="/static/js/welcome.js?v={{ settings.asset_version }}"></script>
+{% endblock %}

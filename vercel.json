@@ -3,7 +3,7 @@
   "functions": {
     "app.py": {
       "maxDuration": 300,
-      "excludeFiles": "{tests/**,migrations/**,scripts/**,data/**,venv/**,.venv/**,.claude/**,**/__pycache__/**}"
+      "excludeFiles": "{tests/**,migrations/**,scripts/**,data/**,venv/**,.venv/**,.claude/**,.agents/**,**/__pycache__/**,frontend/node_modules/**,frontend/tailwind/**}"
     }
   },
   "crons": [

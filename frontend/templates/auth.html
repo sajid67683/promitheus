@@ -1,0 +1,77 @@
+{% extends "_public.html" %}
+{% from "_icons.html" import icon %}
+{% set signup = mode == "signup" %}
+{% block title %}{{ "Create your account" if signup else "Log in" }} · Promitheus{% endblock %}
+
+{% block header_actions %}
+  {% if signup %}<a href="/login" class="btn btn-ghost btn-sm">Log in</a>
+  {% else %}<a href="/signup" class="btn btn-ghost btn-sm">Create an account</a>{% endif %}
+{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="mx-auto w-full max-w-md px-4 pt-6 pb-16 sm:pt-12">
+  <h1 class="text-3xl font-extrabold">{{ "Create your account" if signup else "Welcome back" }}</h1>
+  <p class="mt-2 text-muted">{{ "Start turning lectures into lessons." if signup else "Log in to keep your streak going." }}</p>
+
+  {% if settings.google_client_id %}
+  <script src="https://accounts.google.com/gsi/client?hl=en" async defer></script>
+  <div class="mt-8">
+    <div id="g_id_onload" data-client_id="{{ settings.google_client_id }}" data-context="{{ 'signup' if signup else 'signin' }}"
+         data-ux_mode="popup" data-callback="handleGoogleCredential" data-auto_prompt="false"></div>
+    <div class="g_id_signin flex justify-center" data-type="standard" data-shape="pill" data-theme="outline"
+         data-text="continue_with" data-size="large" data-width="360" data-logo_alignment="left" data-locale="en"></div>
+  </div>
+  <div class="my-6 flex items-center gap-3 text-sm text-muted"><span class="h-px flex-1 bg-line"></span>or<span class="h-px flex-1 bg-line"></span></div>
+  {% else %}
+  <div class="mt-8"></div>
+  {% endif %}
+
+  <form data-auth-form data-mode="{{ mode }}" data-next="{{ next_path }}" novalidate class="flex flex-col gap-5">
+    {% if signup %}
+    <div>
+      <label class="field-label" for="username">Username</label>
+      <input class="input" id="username" name="username" autocomplete="username" required minlength="3" maxlength="30"
+             pattern="[A-Za-z0-9_.\-]{3,30}" aria-describedby="username-hint">
+      <p class="field-hint" id="username-hint">3–30 letters, numbers, dots, dashes or underscores. Shown on leaderboards.</p>
+    </div>
+    <div>
+      <label class="field-label" for="email">Email</label>
+      <input class="input" id="email" name="email" type="email" autocomplete="email" required maxlength="254">
+    </div>
+    {% else %}
+    <div>
+      <label class="field-label" for="username">Username or email</label>
+      <input class="input" id="username" name="username" autocomplete="username" required maxlength="254">
+    </div>
+    {% endif %}
+    <div>
+      <div class="flex items-center justify-between">
+        <label class="field-label" for="password">Password</label>
+        {% if not signup and settings.email_enabled %}
+        <a href="/forgot-password" class="mb-1.5 text-sm font-semibold text-brand hover:underline">Forgot password?</a>
+        {% endif %}
+      </div>
+      <div class="relative">
+        <input class="input pr-14" id="password" name="password" type="password" required
+               autocomplete="{{ 'new-password' if signup else 'current-password' }}" {% if signup %}minlength="8" aria-describedby="password-hint"{% endif %}>
+        <button type="button" class="icon-btn absolute right-1 top-1/2 -translate-y-1/2 size-10!" data-toggle-password aria-label="Show password" aria-pressed="false">
+          <span class="text-xs font-bold" data-toggle-label>Show</span>
+        </button>
+      </div>
+      {% if signup %}<p class="field-hint" id="password-hint">At least 8 characters.</p>{% endif %}
+    </div>
+
+    <p class="field-error -mt-1" role="alert" data-form-error hidden></p>
+
+    <button type="submit" class="btn btn-primary btn-lg w-full">{{ "Create account" if signup else "Log in" }}</button>
+  </form>
+
+  <p class="mt-6 text-center text-muted">
+    {% if signup %}Already have an account? <a href="/login" class="font-semibold text-brand hover:underline">Log in</a>
+    {% else %}New to Promitheus? <a href="/signup" class="font-semibold text-brand hover:underline">Create an account</a>{% endif %}
+  </p>
+</div>
+{% endblock %}
+
+{% block scripts %}<script type="module" src="/static/js/auth.js?v={{ settings.asset_version }}"></script>{% endblock %}

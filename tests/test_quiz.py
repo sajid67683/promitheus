@@ -48,9 +48,9 @@ def test_upload_builds_six_lessons_and_drops_malformed_questions(client):
 
     lessons = client.get("/lessons/", headers=headers).json()
     assert [l["title"] for l in lessons] == [
-        "Free Recall", "Fill in the Blanks", "Multiple Choice", "True or False", "Rearrange Concepts", "Explain Concepts",
+        "Free recall", "Fill in the blanks", "Multiple choice", "True or false", "Put it in order", "Explain it",
     ]
-    assert lessons[0]["unit_title"] == "lecture"
+    assert lessons[0]["unit_title"] == "Photosynthesis"  # the AI's title for the lecture
 
     counts = [len(client.post(f"/lessons/{l['id']}/attempts", headers=headers).json()["questions"]) for l in lessons]
     assert counts == [2, 1, 1, 2, 1, 1]
@@ -98,7 +98,7 @@ def test_wrong_answers_earn_nothing_and_reveal_the_solution(client, clock):
     res = client.post(
         f"/attempts/{attempt['attempt_id']}/answers", headers=headers, json={"question_id": q["question_id"], "answer": "Melanin"}
     ).json()
-    assert res == {"correct": False, "correct_answer": "Chlorophyll", "feedback": ""}
+    assert res["correct"] is False and res["correct_answer"] == "Chlorophyll" and res["typo"] is False
     done = client.post(f"/attempts/{attempt['attempt_id']}/complete", headers=headers).json()
     assert done["xp_awarded"] == 0
 
@@ -187,7 +187,6 @@ def test_upload_rejects_bad_files_with_4xx(client, restore_settings):
 def test_upload_accepts_uppercase_extension(client):
     headers = register(client)
     assert upload_txt(client, headers, name="C:\\fakepath\\LECTURE.TXT").status_code == 200
-    assert client.get("/lessons/", headers=headers).json()[0]["unit_title"] == "LECTURE"
 
 
 def test_upload_daily_limit(client, restore_settings):
@@ -199,12 +198,13 @@ def test_upload_daily_limit(client, restore_settings):
 
 def test_grading_helpers():
     q = models.Question(question_type="true_false", content={"answer": "True"})
-    assert grading.grade_locally(q, "true")
-    assert not grading.grade_locally(q, "")
+    assert grading.grade_locally(q, "true").correct
+    assert not grading.grade_locally(q, "").correct
+    assert not grading.grade_locally(q, "Tru").correct  # no typo tolerance for choices
     r = models.Question(question_type="rearrange", content={"answer": ["a", "b"]})
-    assert grading.grade_locally(r, ["A", "b "])
-    assert not grading.grade_locally(r, ["b", "a"])
-    assert not grading.grade_locally(r, "a b")
+    assert grading.grade_locally(r, ["A", "b "]).correct
+    assert not grading.grade_locally(r, ["b", "a"]).correct
+    assert not grading.grade_locally(r, "a b").correct
 
 
 def test_falls_back_to_another_model_when_gemini_is_overloaded(client, fake_gemini, monkeypatch, restore_settings):
@@ -229,4 +229,4 @@ def test_falls_back_to_another_model_when_gemini_is_overloaded(client, fake_gemi
     # When every model is down the user gets a clear 502, not a 500.
     restore_settings.gemini_fallback_models = []
     res = upload_txt(client, headers)
-    assert res.status_code == 502 and "unavailable" in res.json()["detail"]
+    assert res.status_code == 502 and "busy" in res.json()["detail"]

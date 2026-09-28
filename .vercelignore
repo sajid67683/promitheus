@@ -8,3 +8,5 @@ data/
 tests/
 .pytest_cache/
 **/__pycache__/
+node_modules/
+frontend/node_modules/

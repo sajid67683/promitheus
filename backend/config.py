@@ -28,8 +28,20 @@ class Settings:
         self.gemini_fallback_models = [
             m.strip() for m in os.getenv("GEMINI_FALLBACK_MODELS", "gemini-flash-latest,gemini-flash-lite-latest").split(",") if m.strip()
         ]
+        # Quick yes/no checks (is this short answer equivalent?) use a faster, cheaper model.
+        self.gemini_fast_model = os.getenv("GEMINI_FAST_MODEL", "gemini-flash-lite-latest")
         self.google_client_id = os.getenv("GOOGLE_CLIENT_ID") or None
         self.cron_secret = os.getenv("CRON_SECRET") or None
+
+        # Password-reset emails are sent through Resend (https://resend.com) when configured.
+        self.resend_api_key = os.getenv("RESEND_API_KEY") or None
+        self.email_from = os.getenv("EMAIL_FROM") or None
+        # Public URL used in emails; falls back to the request's own URL.
+        self.app_url = (os.getenv("APP_URL") or "").rstrip("/") or None
+
+        self.session_cookie = "promitheus_session"
+        # Cache-busts CSS/JS per deployment.
+        self.asset_version = (os.getenv("VERCEL_GIT_COMMIT_SHA") or os.getenv("VERCEL_DEPLOYMENT_ID") or "dev")[:12]
 
         self.access_token_expire_minutes = _int_env("ACCESS_TOKEN_EXPIRE_MINUTES", 60 * 24 * 7)
         # Vercel rejects request bodies over 4.5 MB, so stay below that.
@@ -41,6 +53,15 @@ class Settings:
     @property
     def is_production(self) -> bool:
         return self.environment == "production" or self.vercel_env == "production"
+
+    @property
+    def secure_cookies(self) -> bool:
+        # Local development runs on plain http.
+        return self.on_vercel or self.is_production
+
+    @property
+    def email_enabled(self) -> bool:
+        return bool(self.resend_api_key and self.email_from)
 
     @property
     def database_url(self) -> str:

@@ -1,112 +1,148 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}{{ "Practice" if mode == "practice" else "Lesson" }} · Promitheus{% endblock %}
+{% block body_class %}overflow-x-hidden{% endblock %}
 
-{% block content %}
-<div id="quiz-container" class="max-w-2xl mx-auto mt-10 pb-40">
-    <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-4 mb-12">
-        <div id="progress-bar"
-            class="bg-[#58cc02] h-4 rounded-full transition-all duration-500 shadow-[0_3px_0_#46a302]"
-            style="width: 5%"></div>
+{% block body %}
+<div id="quiz-app" class="min-h-dvh flex flex-col"
+     data-mode="{{ mode }}" data-lesson-id="{{ lesson_id or '' }}">
+
+  <header class="sticky top-0 z-30 bg-paper">
+    <div class="mx-auto w-full max-w-3xl px-4 h-16 sm:h-20 flex items-center gap-3 sm:gap-4">
+      <button type="button" class="icon-btn shrink-0" data-quit aria-label="Quit">{{ icon("x", "size-6") }}</button>
+      <div class="progress flex-1 h-4!" role="progressbar" aria-label="Progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-progress>
+        <span class="bg-good-fill" style="width: 0%"></span>
+      </div>
+      <span class="text-sm font-semibold text-muted tabular-nums min-w-12 text-right" data-counter></span>
+      <button type="button" class="icon-btn shrink-0" data-sound-toggle aria-pressed="true" title="Sound">
+        <span data-sound-on>{{ icon("volume", "size-5") }}</span>
+        <span data-sound-off hidden>{{ icon("volume-off", "size-5") }}</span>
+        <span class="sr-only">Sound effects</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="main" class="flex-1 w-full mx-auto max-w-2xl px-4 pt-4 sm:pt-8 pb-72">
+    {# Loading state #}
+    <div data-view="loading" class="pt-20 flex flex-col items-center gap-4 text-muted">
+      <span class="spinner size-8!"></span>
+      <p>Loading your {{ "practice round" if mode == "practice" else "lesson" }}…</p>
     </div>
 
-    <div id="question-card"
-        class="w-full bg-white dark:bg-[#131f24] p-8 md:p-12 rounded-3xl border-2 border-slate-200 dark:border-slate-800 min-h-[400px] flex flex-col items-start transition-all duration-300 shadow-sm">
-        <h1 id="question-header" class="text-3xl font-black text-slate-800 dark:text-white mb-10 tracking-tight">
-            Fill in the blank
-        </h1>
-
-        <div id="sentence-container"
-            class="text-2xl font-bold text-slate-700 dark:text-slate-200 mb-12 leading-relaxed tracking-wide">
-            Loading question...
-        </div>
-
-        <div id="options-container" class="w-full space-y-3">
-        </div>
+    {# Error state #}
+    <div data-view="error" hidden class="pt-16 text-center">
+      <span class="mx-auto mb-4 grid place-items-center size-14 rounded-2xl bg-bad-soft text-bad">{{ icon("alert", "size-7") }}</span>
+      <h1 class="text-xl font-bold" data-error-title>Couldn't load this lesson</h1>
+      <p class="mt-2 text-muted" data-error-text></p>
+      <a href="/dashboard" class="btn btn-primary mt-6">Back to your path</a>
     </div>
+
+    {# Question #}
+    <section data-view="question" hidden aria-live="polite">
+      <p class="text-sm font-semibold text-brand mb-2" data-kind></p>
+      <h1 class="text-xl sm:text-2xl font-bold leading-snug [text-wrap:pretty] outline-none" data-prompt tabindex="-1"></h1>
+      <div class="mt-8" data-answer-area></div>
+    </section>
+
+    {# Results #}
+    <section data-view="results" hidden>
+      <div class="text-center pt-4">
+        <span class="mx-auto mb-5 grid place-items-center size-20 rounded-3xl bg-gold-soft text-gold">{{ icon("star", "size-10", filled=true) }}</span>
+        <h1 class="text-3xl font-extrabold" data-results-title>Lesson complete!</h1>
+        <p class="mt-2 text-muted" data-results-subtitle></p>
+      </div>
+      <dl class="mt-8 grid grid-cols-3 gap-3">
+        <div class="panel p-4 text-center">
+          <dt class="text-sm text-muted">XP earned</dt>
+          <dd class="mt-1 text-2xl font-extrabold text-gold tabular-nums" data-stat="xp">0</dd>
+        </div>
+        <div class="panel p-4 text-center">
+          <dt class="text-sm text-muted">Accuracy</dt>
+          <dd class="mt-1 text-2xl font-extrabold tabular-nums" data-stat="accuracy">0%</dd>
+        </div>
+        <div class="panel p-4 text-center">
+          <dt class="text-sm text-muted">Time</dt>
+          <dd class="mt-1 text-2xl font-extrabold tabular-nums" data-stat="time">0:00</dd>
+        </div>
+      </dl>
+      <p class="mt-4 rounded-2xl bg-ember-soft text-ember px-4 py-3 font-semibold flex items-center gap-2" data-streak-note hidden>
+        {{ icon("flame", "size-5", filled=true) }}<span></span>
+      </p>
+      <p class="mt-3 rounded-2xl bg-gold-soft text-gold px-4 py-3 font-semibold flex items-center gap-2" data-goal-note hidden>
+        {{ icon("zap", "size-5", filled=true) }}<span></span>
+      </p>
+
+      <div class="mt-8" data-review hidden>
+        <h2 class="text-lg font-bold">Review your mistakes</h2>
+        <ol class="mt-3 flex flex-col gap-3" data-review-list></ol>
+      </div>
+    </section>
+  </main>
+
+  {# Bottom action bar / feedback sheet #}
+  <div class="action-bar fixed bottom-0 inset-x-0 z-30 pb-[env(safe-area-inset-bottom)]" data-action-bar data-state="idle">
+    <div class="mx-auto w-full max-w-3xl px-4 py-4 sm:py-6 flex flex-col sm:flex-row sm:items-center gap-4">
+      <div class="flex-1 min-w-0" data-feedback hidden>
+        <div class="flex items-start gap-3">
+          <span class="grid place-items-center size-11 rounded-full bg-surface shrink-0" data-feedback-icon></span>
+          <div class="min-w-0">
+            <h2 class="text-xl font-extrabold" data-feedback-title></h2>
+            <p class="mt-1 font-semibold" data-feedback-answer></p>
+            <p class="mt-1.5 text-[0.95rem] text-ink/80 dark:text-ink/85" data-feedback-explanation></p>
+            <button type="button" class="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-ink" data-report>
+              {{ icon("flag", "size-4") }} Report a problem
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="flex-1 max-sm:hidden" data-spacer></div>
+      <div class="flex gap-3 sm:justify-end" data-results-actions hidden></div>
+      <button type="button" class="btn btn-lg btn-primary w-full sm:w-auto sm:min-w-44" data-primary disabled>Check</button>
+    </div>
+  </div>
 </div>
 
-<div id="quiz-feedback-bar"
-    class="fixed bottom-0 left-0 right-0 h-36 transform translate-y-full transition-all duration-300 ease-out z-[100] flex items-center border-t-2 bg-white dark:bg-[#131f24]">
-    <div class="max-w-[1056px] mx-auto w-full px-6 flex justify-between items-center">
-        <div class="flex items-center gap-6">
-            <div id="feedback-icon-circle"
-                class="w-20 h-20 rounded-full flex items-center justify-center text-4xl shadow-sm">
-                <span id="feedback-icon"></span>
-            </div>
-            <div>
-                <h3 id="feedback-title" class="text-2xl font-black mb-1"></h3>
-                <p id="feedback-solution" class="font-bold text-lg"></p>
-            </div>
-        </div>
-
-        <div class="flex gap-4">
-            <button id="report-btn"
-                class="hidden md:flex items-center gap-2 font-black uppercase text-sm tracking-widest transition-opacity hover:opacity-70">
-                <span>🚩</span> Report
-            </button>
-
-            <button id="next-question-btn"
-                class="px-12 py-4 rounded-2xl font-black text-xl tracking-widest shadow-[0_5px_0_rgba(0,0,0,0.2)] active:shadow-none active:translate-y-[2px] transition-all uppercase min-w-[200px]">
-                Continue
-            </button>
-        </div>
+{# Quit confirmation #}
+<dialog class="modal" data-quit-dialog aria-labelledby="quit-title">
+  <form method="dialog" class="p-6">
+    <h2 id="quit-title" class="text-xl font-bold">Quit this {{ "practice round" if mode == "practice" else "lesson" }}?</h2>
+    <p class="mt-2 text-muted">Your answers so far won't count toward XP or your streak.</p>
+    <div class="mt-6 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+      <button value="quit" class="btn btn-secondary">Quit</button>
+      <button value="stay" class="btn btn-primary" autofocus>Keep learning</button>
     </div>
-</div>
+  </form>
+</dialog>
 
-<style>
-    /* Option Button Styling */
-    .option-btn {
-        @apply w-full text-left p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-800 font-bold text-lg text-slate-700 dark:text-slate-300 transition-all duration-100 hover:bg-slate-50 dark:hover:bg-slate-800/50 shadow-[0_3px_0_#e2e8f0] dark:shadow-[0_3px_0_#1e293b];
-    }
-
-    /* ✨ States for JavaScript to toggle ✨ */
-    .is-correct-selection {
-        background-color: #d7ffb8 !important;
-        border-color: #58cc02 !important;
-        color: #58a700 !important;
-        box-shadow: 0 3px 0 #58cc02 !important;
-    }
-
-    .is-wrong-selection {
-        background-color: #ffdfe0 !important;
-        border-color: #ea2b2b !important;
-        color: #ea2b2b !important;
-        box-shadow: 0 3px 0 #ea2b2b !important;
-    }
-
-    .option-btn.selected {
-        @apply border-[#84d8ff] bg-[#ddf4ff] text-[#1899d6] shadow-[0_3px_0_#84d8ff];
-    }
-
-    .quiz-blank {
-        @apply border-b-2 border-slate-400 mx-2 inline-block min-w-[80px] text-center text-indigo-500;
-    }
-
-    .animate-shake {
-        animation: shake 0.4s cubic-bezier(.36, .07, .19, .97) both;
-    }
-
-    @keyframes shake {
-
-        10%,
-        90% {
-            transform: translate3d(-1px, 0, 0);
-        }
-
-        20%,
-        80% {
-            transform: translate3d(2px, 0, 0);
-        }
-
-        30%,
-        50%,
-        70% {
-            transform: translate3d(-4px, 0, 0);
-        }
-
-        40%,
-        60% {
-            transform: translate3d(4px, 0, 0);
-        }
-    }
-</style>
+{# Report a problem #}
+<dialog class="modal" data-report-dialog aria-labelledby="report-title">
+  <form method="dialog" class="p-6" data-report-form>
+    <h2 id="report-title" class="text-xl font-bold">Report a problem</h2>
+    <fieldset class="mt-4 flex flex-col gap-2.5">
+      <legend class="sr-only">What's wrong?</legend>
+      <label class="choice-card" data-reason-accept>
+        <input type="radio" name="reason" value="accept_my_answer" class="sr-only">
+        <span><span class="block font-semibold">My answer should be accepted</span>
+          <span class="block text-sm text-muted">It won't count as a mistake, and it'll be accepted next time.</span></span>
+      </label>
+      <label class="choice-card">
+        <input type="radio" name="reason" value="wrong_or_unclear" class="sr-only">
+        <span><span class="block font-semibold">The question is wrong or unclear</span>
+          <span class="block text-sm text-muted">We'll remove it from future quizzes.</span></span>
+      </label>
+      <label class="choice-card">
+        <input type="radio" name="reason" value="other" class="sr-only">
+        <span class="block font-semibold">Something else</span>
+      </label>
+    </fieldset>
+    <label class="field-label mt-4" for="report-details">Details (optional)</label>
+    <textarea id="report-details" name="details" rows="2" maxlength="1000" class="input"></textarea>
+    <div class="mt-6 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+      <button value="cancel" formnovalidate class="btn btn-secondary">Cancel</button>
+      <button value="send" class="btn btn-primary" data-report-send disabled>Send report</button>
+    </div>
+  </form>
+</dialog>
 {% endblock %}
+
+{% block scripts %}<script type="module" src="/static/js/quiz.js?v={{ settings.asset_version }}"></script>{% endblock %}

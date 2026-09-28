@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block body %}
+<header class="mx-auto w-full max-w-6xl px-4 h-18 flex items-center gap-3">
+  <a href="/" class="flex items-center gap-2.5 mr-auto">
+    {% include "_logo.html" %}
+    <span class="text-xl font-extrabold tracking-tight">Promitheus</span>
+  </a>
+  {% block header_actions %}
+  <a href="/login" class="btn btn-ghost btn-sm">Log in</a>
+  <a href="/signup" class="btn btn-primary btn-sm">Get started</a>
+  {% endblock %}
+</header>
+<main id="main">{% block content %}{% endblock %}</main>
+{% block footer %}
+<footer class="mx-auto w-full max-w-6xl px-4 py-10 mt-10 border-t-[1.5px] border-line flex flex-col sm:flex-row gap-3 sm:items-center text-sm text-muted">
+  <span class="mr-auto">© {{ 2026 }} Promitheus. Built for students who study a little every day.</span>
+  <a href="/login" class="hover:text-ink">Log in</a>
+  <a href="/signup" class="hover:text-ink">Create an account</a>
+</footer>
+{% endblock %}
+{% endblock %}

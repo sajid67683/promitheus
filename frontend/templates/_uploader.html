@@ -1,0 +1,38 @@
+{% from "_icons.html" import icon %}
+{#- Shared lecture uploader. Params: show_sample (bool), compact (bool) -#}
+<div class="dropzone p-6 sm:p-8 text-center" data-uploader data-max-mb="{{ (settings.max_upload_bytes // 1048576) }}">
+  <div data-upload-idle>
+    <span class="mx-auto mb-4 grid place-items-center size-14 rounded-2xl bg-brand-soft text-brand">{{ icon("upload", "size-7") }}</span>
+    <h3 class="text-lg font-bold">{{ heading|default("Add a lecture") }}</h3>
+    <p class="mt-1 text-muted text-[0.95rem] max-w-sm mx-auto">
+      Drop a PDF or text file here. We'll turn it into six short lessons.
+    </p>
+    <div class="mt-5 flex flex-col sm:flex-row items-center justify-center gap-3">
+      <label class="btn btn-primary cursor-pointer">
+        {{ icon("file", "size-5") }} Choose a file
+        <input type="file" accept=".pdf,.txt,application/pdf,text/plain" class="sr-only" data-upload-input>
+      </label>
+      {% if show_sample %}
+      <button type="button" class="btn btn-secondary" data-upload-sample>
+        {{ icon("sparkles", "size-5") }} Try a sample lecture
+      </button>
+      {% endif %}
+    </div>
+    <p class="mt-4 text-sm text-muted">PDF or .txt, up to {{ settings.max_upload_bytes // 1048576 }} MB. Scanned pages aren't supported yet.</p>
+  </div>
+
+  <div data-upload-busy hidden aria-live="polite">
+    <span class="mx-auto mb-4 grid place-items-center size-14 rounded-2xl bg-brand-soft text-brand"><span class="spinner size-7!"></span></span>
+    <h3 class="text-lg font-bold" data-upload-file>Working on your lecture</h3>
+    <ol class="mt-4 inline-flex flex-col gap-2 text-left text-[0.95rem]">
+      <li data-step="read" class="flex items-center gap-2 text-muted"><span class="step-dot size-2 rounded-full bg-line-strong"></span>Reading the file</li>
+      <li data-step="write" class="flex items-center gap-2 text-muted"><span class="step-dot size-2 rounded-full bg-line-strong"></span>Writing questions</li>
+      <li data-step="save" class="flex items-center gap-2 text-muted"><span class="step-dot size-2 rounded-full bg-line-strong"></span>Building your lessons</li>
+    </ol>
+    <p class="mt-4 text-sm text-muted">This usually takes 15–60 seconds. Keep this tab open.</p>
+  </div>
+
+  <div data-upload-error hidden role="alert" class="mt-4 rounded-2xl bg-bad-soft text-bad px-4 py-3 text-sm font-medium text-left flex gap-2">
+    {{ icon("alert", "size-5 shrink-0") }}<span data-upload-error-text></span>
+  </div>
+</div>

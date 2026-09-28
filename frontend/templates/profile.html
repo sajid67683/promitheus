@@ -1,87 +1,39 @@
-{% extends "base.html" %}
+{% extends "_app.html" %}
+{% from "_icons.html" import icon %}
+{% block page_title %}Profile{% endblock %}
 
 {% block content %}
-<div id="profile-page-mount" class="max-w-3xl mx-auto mt-10">
+<section class="flex flex-col sm:flex-row items-center sm:items-end gap-5 text-center sm:text-left">
+  <img src="{{ me.avatar_url }}" alt="Your avatar" width="112" height="112" class="size-28 rounded-full bg-surface-2 ring-4 ring-surface">
+  <div class="flex-1 min-w-0">
+    <h1 class="text-3xl font-extrabold truncate">{{ me.username }}</h1>
+    <p class="text-muted">Joined {{ user.created_at|shortdate if user.created_at else "recently" }} · {{ me.league }} League</p>
+  </div>
+  <a href="/settings" class="btn btn-secondary btn-sm">{{ icon("pencil", "size-4") }} Edit profile</a>
+</section>
 
-    <div
-        class="bg-white dark:bg-[#0b141a] rounded-3xl p-8 border-2 border-slate-200 dark:border-slate-800 flex items-center gap-8 mb-8 shadow-sm relative overflow-hidden">
-        <div class="absolute -top-10 -right-10 w-40 h-40 bg-indigo-50 dark:bg-indigo-900/20 rounded-full blur-3xl">
-        </div>
-
-        <div class="relative w-32 h-32 flex-shrink-0">
-            <img id="profile-avatar" src="" alt="User Avatar"
-                class="w-full h-full rounded-full border-4 border-slate-100 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 object-cover shadow-md">
-            <div class="absolute bottom-0 right-0 bg-indigo-500 w-8 h-8 rounded-full border-4 border-white dark:border-[#0b141a] flex items-center justify-center text-white text-xs cursor-pointer hover:bg-indigo-600 transition"
-                title="Edit Avatar">
-                ✏️
-            </div>
-        </div>
-
-        <div class="flex-1 z-10">
-            <h1 id="profile-username" class="text-4xl font-extrabold text-slate-800 dark:text-white mb-1">Loading...
-            </h1>
-            <p id="profile-email" class="text-slate-500 font-bold mb-4">fetching info...</p>
-            <p class="text-sm font-bold text-indigo-400 uppercase tracking-widest flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
-                Active Member
-            </p>
-        </div>
+<h2 class="mt-10 text-lg font-bold">Statistics</h2>
+<dl class="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-3">
+  {% for ic, tone, value, label, href in [
+    ("flame", "ember", me.streak, "Day streak", "/streaks"),
+    ("zap", "gold", me.xp, "Total XP", none),
+    ("trophy", "brand", me.league, "League", "/leaderboard"),
+    ("check", "good", lessons_done, "Lessons done", none),
+    ("book", "brand", unit_count, "Units", "/library"),
+    ("gift", "gold", me.quests_completed, "Quests done", "/quests"),
+  ] %}
+  <div class="panel p-4 flex items-center gap-3 relative {{ 'hover:bg-surface-2' if href else '' }}">
+    <span class="grid place-items-center size-10 rounded-xl bg-{{ tone }}-soft text-{{ tone }} shrink-0">{{ icon(ic, "size-5", filled=ic in ["flame", "zap"]) }}</span>
+    <div class="min-w-0">
+      <dd class="text-xl font-extrabold tabular-nums truncate">{% if href %}<a href="{{ href }}" class="after:absolute after:inset-0">{{ value }}</a>{% else %}{{ value }}{% endif %}</dd>
+      <dt class="text-sm text-muted">{{ label }}</dt>
     </div>
+  </div>
+  {% endfor %}
+</dl>
 
-    <h3 class="text-2xl font-bold text-slate-800 dark:text-white mb-4">Statistics</h3>
-    <div class="grid grid-cols-2 gap-4 mb-8">
-
-        <div
-            class="bg-white dark:bg-[#0b141a] border-2 border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex items-center gap-4 transition transform hover:-translate-y-1 hover:border-yellow-400">
-            <div
-                class="w-14 h-14 rounded-2xl bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center text-3xl">
-                ⚡</div>
-            <div>
-                <h4 class="text-slate-500 font-bold text-sm uppercase tracking-wider mb-1">Total XP</h4>
-                <p id="profile-xp" class="text-3xl font-black text-slate-800 dark:text-white">0</p>
-            </div>
-        </div>
-
-        <div
-            class="bg-white dark:bg-[#0b141a] border-2 border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex items-center gap-4 transition transform hover:-translate-y-1 hover:border-orange-400">
-            <div
-                class="w-14 h-14 rounded-2xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-3xl">
-                🔥</div>
-            <div>
-                <h4 class="text-slate-500 font-bold text-sm uppercase tracking-wider mb-1">Day Streak</h4>
-                <p id="profile-streak" class="text-3xl font-black text-slate-800 dark:text-white">0</p>
-            </div>
-        </div>
-
-        <div
-            class="bg-white dark:bg-[#0b141a] border-2 border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex items-center gap-4 transition transform hover:-translate-y-1 hover:border-blue-400">
-            <div
-                class="w-14 h-14 rounded-2xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-3xl">
-                🎯
-            </div>
-            <div>
-                <h4 class="text-slate-500 font-bold text-sm uppercase tracking-wider mb-1">Quests Done</h4>
-                <p id="profile-quests-done" class="text-3xl font-black text-slate-800 dark:text-white">0</p>
-            </div>
-        </div>
-
-        <div
-            class="bg-white dark:bg-[#0b141a] border-2 border-slate-200 dark:border-slate-800 rounded-3xl p-6 flex items-center gap-4 transition transform hover:-translate-y-1 hover:border-purple-400">
-            <div
-                class="w-14 h-14 rounded-2xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-3xl">
-                🏆
-            </div>
-            <div>
-                <h4 class="text-slate-500 font-bold text-sm uppercase tracking-wider mb-1">League</h4>
-                <p id="profile-league" class="text-xl font-black text-slate-800 dark:text-white mt-1">Paper</p>
-            </div>
-        </div>
-
-    </div>
-
-    <button onclick="logout()"
-        class="w-full py-4 rounded-2xl font-bold text-lg text-red-500 border-2 border-slate-200 dark:border-slate-800 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 transition">
-        Sign Out
-    </button>
+<div class="mt-10 flex flex-col sm:flex-row gap-3">
+  <a href="/settings" class="btn btn-secondary">{{ icon("sliders", "size-5") }} Settings</a>
+  <button type="button" class="btn btn-ghost btn-danger-ghost" data-logout>{{ icon("logout", "size-5") }} Log out</button>
 </div>
 {% endblock %}

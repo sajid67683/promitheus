@@ -1,0 +1,13 @@
+{
+  "name": "promitheus-frontend",
+  "private": true,
+  "description": "Builds static/css/app.css from tailwind/app.css. Run after changing templates or JS.",
+  "scripts": {
+    "build": "tailwindcss -i ./tailwind/app.css -o ./static/css/app.css --minify",
+    "watch": "tailwindcss -i ./tailwind/app.css -o ./static/css/app.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.0",
+    "tailwindcss": "^4.1.0"
+  }
+}

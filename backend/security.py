@@ -1,8 +1,11 @@
-"""Password hashing and JWT helpers."""
+"""Password hashing, session tokens and the session cookie."""
+import hashlib
+import secrets
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
 import jwt
+from fastapi import Response
 
 from backend.config import settings
 
@@ -26,20 +29,49 @@ def verify_password(password: str, hashed_password: str | None) -> bool:
     return matches and hashed_password is not None
 
 
-def create_access_token(user_id: int) -> str:
+def create_access_token(user_id: int, token_version: int = 0) -> str:
     now = datetime.now(timezone.utc)
     payload = {
         "sub": str(user_id),
+        "ver": token_version,
         "iat": now,
         "exp": now + timedelta(minutes=settings.access_token_expire_minutes),
     }
     return jwt.encode(payload, settings.secret_key, algorithm=ALGORITHM)
 
 
-def decode_access_token(token: str) -> int | None:
-    """Returns the user id, or None if the token is invalid or expired."""
+def decode_access_token(token: str) -> tuple[int, int] | None:
+    """Returns (user id, token version), or None if the token is invalid or expired."""
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM], options={"require": ["exp", "sub"]})
-        return int(payload["sub"])
+        return int(payload["sub"]), int(payload.get("ver", 0))
     except (jwt.PyJWTError, ValueError, TypeError):
         return None
+
+
+def set_session_cookie(response: Response, token: str) -> None:
+    response.set_cookie(
+        settings.session_cookie,
+        token,
+        max_age=settings.access_token_expire_minutes * 60,
+        httponly=True,  # page scripts can't read it, so XSS can't steal it
+        secure=settings.secure_cookies,
+        samesite="lax",  # not sent on cross-site POSTs (CSRF)
+        path="/",
+    )
+
+
+def clear_session_cookie(response: Response) -> None:
+    response.delete_cookie(
+        settings.session_cookie, path="/", httponly=True, secure=settings.secure_cookies, samesite="lax"
+    )
+
+
+def new_reset_token() -> tuple[str, str]:
+    """(token for the email link, hash to store)."""
+    token = secrets.token_urlsafe(32)
+    return token, hash_token(token)
+
+
+def hash_token(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()

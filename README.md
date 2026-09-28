@@ -6,6 +6,18 @@ explain), and learners earn XP, keep streaks, complete daily quests, and compete
 
 **Stack:** FastAPI · SQLAlchemy + PostgreSQL · Alembic · Jinja templates + vanilla JS · Gemini (`google-genai`) · Vercel
 
+## Features
+
+- **Learn:** a lesson path per uploaded lecture, six question types, instant feedback with explanations,
+  typo-tolerant grading (plus an AI double-check for free-text answers), results screen with a mistakes review.
+- **Practice:** every wrong answer goes into a review queue; practice rounds clear it (5 XP per first fix).
+- **Library:** rename, delete or regenerate units; drag-and-drop uploads with progress.
+- **Progress:** daily goal (chosen during onboarding), streak calendar, daily/monthly quests, weekly leagues.
+- **Account:** settings for profile and avatar, daily goal, theme, sound, password, sign out everywhere,
+  delete account, and forgot-password emails (when Resend is configured).
+- **Accessible by default:** keyboard shortcuts in quizzes (1–6 to pick, Enter to check/continue),
+  visible focus, WCAG AA contrast in light and dark themes, reduced-motion support, mobile tab bar.
+
 ## How it fits together
 
 | Piece | Where |
@@ -16,7 +28,9 @@ explain), and learners earn XP, keep streaks, complete daily quests, and compete
 | Answer checking (server-side only) | `backend/grading.py` |
 | Gemini calls | `backend/ai_service.py` |
 | Database models / migrations | `backend/models.py`, `migrations/` |
-| Frontend | `frontend/templates/`, `frontend/static/` |
+| Pages (server-rendered) | `backend/routers/pages.py`, `frontend/templates/` |
+| Design system (Tailwind v4) | `frontend/tailwind/app.css` → built to `frontend/static/css/app.css` |
+| Browser scripts (ES modules) | `frontend/static/js/` |
 
 Quizzes are graded on the server: the browser only receives prompts and choices, submits each
 answer to `/attempts/{id}/answers`, and XP is calculated by `/attempts/{id}/complete`. XP is
@@ -33,6 +47,12 @@ pip install -r requirements-dev.txt
 cp .env.example .env             # then fill in the values
 alembic upgrade head             # create the tables
 uvicorn app:app --reload         # http://127.0.0.1:8000
+```
+
+After changing templates, JS or `frontend/tailwind/app.css`, rebuild the stylesheet (commit the result):
+
+```bash
+cd frontend && npm install && npm run build   # or: npm run watch
 ```
 
 Run the tests (they use a temporary SQLite database and a fake Gemini, so no setup needed):
@@ -70,6 +90,7 @@ alembic upgrade head
    | `GEMINI_API_KEY` | from [Google AI Studio](https://aistudio.google.com/) |
    | `CRON_SECRET` | another random value (Vercel sends it to the cron endpoint) |
    | `GOOGLE_CLIENT_ID` | optional, enables "Continue with Google" |
+   | `RESEND_API_KEY`, `EMAIL_FROM`, `APP_URL` | optional, enable "Forgot password?" emails |
 
 4. **Create the tables** once, from your machine, against the production database:
 

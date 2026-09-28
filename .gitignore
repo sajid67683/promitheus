@@ -43,3 +43,6 @@ Thumbs.db
 .pytest_cache/
 .env.*
 !.env.example
+
+# Frontend build tooling (the compiled CSS in frontend/static/css is committed)
+node_modules/

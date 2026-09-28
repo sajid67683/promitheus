@@ -3,7 +3,16 @@ from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 XP_PER_CORRECT_ANSWER = 10
-DAILY_XP_GOAL = 50
+# Practice sessions pay less, and only the first time a past mistake is fixed.
+XP_PER_FIXED_MISTAKE = 5
+DAILY_XP_GOAL = 50  # default for new users
+# (xp per day, label, description) offered during onboarding and in settings.
+DAILY_GOAL_OPTIONS = [
+    (20, "Casual", "About one lesson a day"),
+    (50, "Regular", "Two or three lessons a day"),
+    (100, "Serious", "Five lessons a day"),
+    (200, "Intense", "A full study session every day"),
+]
 DAILY_LESSON_GOAL = 1
 MONTHLY_QUEST_GOAL = 20
 
@@ -16,15 +25,24 @@ def now_utc() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def valid_timezone(tz_name: str | None) -> bool:
+    if not tz_name or len(tz_name) > 64:
+        return False
+    try:
+        ZoneInfo(tz_name)
+    except (ZoneInfoNotFoundError, ValueError):
+        return False
+    return True
+
+
 def user_today(tz_name: str | None) -> date:
-    """Today's date in the user's timezone (sent by the browser), falling back to UTC."""
-    tz = timezone.utc
-    if tz_name and len(tz_name) <= 64:
-        try:
-            tz = ZoneInfo(tz_name)
-        except (ZoneInfoNotFoundError, ValueError):
-            pass
+    """Today's date in the user's timezone, falling back to UTC."""
+    tz = ZoneInfo(tz_name) if valid_timezone(tz_name) else timezone.utc
     return now_utc().astimezone(tz).date()
+
+
+def daily_goal(user) -> int:
+    return user.daily_xp_goal or DAILY_XP_GOAL
 
 
 def _month_key(day: date) -> str:
@@ -84,7 +102,7 @@ def record_lesson_completion(user, today: date, xp: int) -> int:
     user.daily_lessons = lessons_before + 1
 
     quests_done = 0
-    if xp_before < DAILY_XP_GOAL <= user.daily_xp:
+    if xp_before < daily_goal(user) <= user.daily_xp:
         quests_done += 1
     if lessons_before < DAILY_LESSON_GOAL <= user.daily_lessons:
         quests_done += 1

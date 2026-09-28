@@ -1,38 +1,82 @@
-{% extends "base.html" %}
+{% extends "_app.html" %}
+{% from "_icons.html" import icon %}
+{% block page_title %}Learn{% endblock %}
+
+{% set OFFSETS = [0, -44, -66, -44, 0, 44, 66, 44] %}
 
 {% block content %}
-<div
-    class="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 text-center mb-10 transition-colors duration-300">
-    <h2 class="text-2xl font-bold mb-2 text-slate-800 dark:text-white">Create a New Lesson</h2>
-    <p class="text-slate-500 dark:text-slate-400 mb-6">
-        Upload a lecture PDF or Text file. Promitheus will read it and generate an interactive quiz.
-    </p>
+{% if not units %}
+  <section class="pt-2 sm:pt-6">
+    <h1 class="text-2xl sm:text-3xl font-extrabold">Welcome, {{ me.username }}</h1>
+    <p class="mt-2 text-muted max-w-prose">Add your first lecture and we'll build a learning path from it: free recall, fill in the blanks, multiple choice and more.</p>
+    <div class="mt-6">{% with show_sample=true, heading="Add your first lecture" %}{% include "_uploader.html" %}{% endwith %}</div>
+  </section>
+{% else %}
+  {# Compact progress for screens without the side panel #}
+  <div class="xl:hidden grid grid-cols-2 gap-3 mb-6">
+    <a href="/quests" class="panel px-4 py-3 flex items-center gap-3">
+      <span class="text-gold">{{ icon("zap", "size-6", filled=true) }}</span>
+      <span class="min-w-0">
+        <span class="block text-sm text-muted">Daily goal</span>
+        <span class="block font-bold">{{ [me.daily_xp, me.goals.daily_xp]|min }} / {{ me.goals.daily_xp }} XP</span>
+      </span>
+    </a>
+    <a href="/streaks" class="panel px-4 py-3 flex items-center gap-3">
+      <span class="text-ember">{{ icon("flame", "size-6", filled=me.streak > 0) }}</span>
+      <span class="min-w-0">
+        <span class="block text-sm text-muted">Streak</span>
+        <span class="block font-bold">{{ me.streak }} day{{ "" if me.streak == 1 else "s" }}</span>
+      </span>
+    </a>
+  </div>
 
-    <div class="max-w-md mx-auto">
-        <input type="file" id="lecture-file" accept=".pdf,.txt" class="block w-full text-sm text-slate-500 dark:text-slate-400 mb-4
-            file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 
-            file:text-sm file:font-semibold 
-            file:bg-indigo-50 dark:file:bg-indigo-900/30 
-            file:text-indigo-700 dark:file:text-indigo-400
-            hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50 cursor-pointer" />
+  {% if mistake_count %}
+  <a href="/practice" class="panel mb-8 p-4 flex items-center gap-4 hover:bg-surface-2 transition-colors">
+    <span class="grid place-items-center size-11 rounded-xl bg-bad-soft text-bad shrink-0">{{ icon("target", "size-6") }}</span>
+    <span class="flex-1 min-w-0">
+      <span class="block font-bold">Fix {{ mistake_count }} mistake{{ "" if mistake_count == 1 else "s" }}</span>
+      <span class="block text-sm text-muted">A short practice round on what you got wrong.</span>
+    </span>
+    {{ icon("chevron-right", "size-5 text-faint") }}
+  </a>
+  {% endif %}
 
-        <button id="upload-btn" onclick="uploadLecture()"
-            class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 px-4 rounded-xl transition duration-200 shadow-md">
-            Generate with AI ✨
-        </button>
-        <p id="upload-status" class="mt-4 text-sm font-semibold hidden"></p>
-    </div>
-</div>
+  {% for unit in units %}
+  <section class="mb-14" aria-labelledby="unit-{{ unit.id }}">
+    <header class="rounded-3xl bg-brand-fill text-white px-6 py-5 flex items-center gap-4 shadow-[0_5px_0_var(--brand-edge)]">
+      <div class="flex-1 min-w-0">
+        <p class="text-sm text-white/80 font-medium">Unit {{ loop.index }} · {{ unit.completed }} of {{ unit.total }} lessons done</p>
+        <h2 id="unit-{{ unit.id }}" class="text-xl font-bold truncate">{{ unit.title }}</h2>
+      </div>
+      {% if unit.next_lesson %}
+      <a href="/quiz/{{ unit.next_lesson.id }}" class="btn btn-sm bg-white text-brand-edge shadow-[0_3px_0_rgb(0_0_0/0.15)] shrink-0 max-sm:hidden">Continue</a>
+      {% endif %}
+    </header>
 
-<div class="flex justify-between items-center mb-4">
-    <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100">Your Study Path</h3>
-    <button onclick="fetchLessons()" class="text-indigo-600 dark:text-indigo-400 text-sm font-semibold hover:underline">
-        Refresh
-    </button>
-</div>
+    <ol class="mt-14 flex flex-col items-center gap-9">
+      {% for lesson in unit.lessons %}
+      {% set offset = OFFSETS[loop.index0 % OFFSETS|length] %}
+      <li class="flex flex-col items-center gap-2.5 {{ 'mt-8' if lesson.state == 'current' and not loop.first else '' }}" style="transform: translateX({{ offset }}px)">
+        {% if lesson.state == "locked" %}
+          <span class="path-node" data-state="locked" role="img" aria-label="{{ lesson.title }}, locked">{{ icon("lock", "size-7") }}</span>
+        {% else %}
+          <a href="/quiz/{{ lesson.id }}" class="path-node" data-state="{{ lesson.state }}"
+             aria-label="{{ lesson.title }}{{ ', completed, practice again' if lesson.state == 'done' else ', start lesson' }}">
+            {% if lesson.state == "current" %}<span class="start-bubble">Start</span>{% endif %}
+            {{ icon("check" if lesson.state == "done" else "star", "size-8", filled=lesson.state != "done") }}
+          </a>
+        {% endif %}
+        <span class="text-sm font-semibold {{ 'text-faint' if lesson.state == 'locked' else 'text-muted' }}">{{ lesson.title }}</span>
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+  {% endfor %}
 
-<div id="study-path" class="w-full relative mt-6">
-    <div class="text-center text-slate-400 p-6">Loading path...</div>
-</div>
-
+  <section aria-label="Add a lecture" class="mt-4">
+    {% with show_sample=false, heading="Add another lecture" %}{% include "_uploader.html" %}{% endwith %}
+  </section>
+{% endif %}
 {% endblock %}
+
+{% block scripts %}<script type="module" src="/static/js/uploader.js?v={{ settings.asset_version }}"></script>{% endblock %}

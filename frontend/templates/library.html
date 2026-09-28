@@ -1,0 +1,74 @@
+{% extends "_app.html" %}
+{% from "_icons.html" import icon %}
+{% block page_title %}Library{% endblock %}
+
+{% block content %}
+<div class="flex items-end justify-between gap-4">
+  <div>
+    <h1 class="text-2xl sm:text-3xl font-extrabold">Library</h1>
+    <p class="mt-1 text-muted">{{ units|length }} unit{{ "" if units|length == 1 else "s" }} · {{ uploads_left }} new unit{{ "" if uploads_left == 1 else "s" }} left today</p>
+  </div>
+</div>
+
+<div class="mt-6">
+  {% with show_sample=not units, heading="Add a lecture" %}{% include "_uploader.html" %}{% endwith %}
+</div>
+
+{% if units %}
+<ul class="mt-8 flex flex-col gap-4" data-library>
+  {% for unit in units|reverse %}
+  {% set pct = (unit.completed * 100 / unit.total)|round|int if unit.total else 0 %}
+  <li class="panel p-5" data-unit="{{ unit.id }}" data-title="{{ unit.title }}">
+    <div class="flex items-start gap-4">
+      <span class="grid place-items-center size-12 rounded-2xl bg-brand-soft text-brand shrink-0">{{ icon("book", "size-6") }}</span>
+      <div class="flex-1 min-w-0">
+        <h2 class="font-bold text-lg truncate" data-unit-title>{{ unit.title }}</h2>
+        <p class="text-sm text-muted">
+          {{ unit.question_count }} questions · added {{ unit.created_at|shortdate if unit.created_at else "recently" }}
+          {% if unit.mistakes %} · <a href="/practice" class="text-bad font-semibold hover:underline">{{ unit.mistakes }} to fix</a>{% endif %}
+        </p>
+        <div class="mt-3 flex items-center gap-3">
+          <div class="progress flex-1" role="progressbar" aria-label="Lessons completed" aria-valuemin="0" aria-valuemax="{{ unit.total }}" aria-valuenow="{{ unit.completed }}">
+            <span class="bg-good-fill" style="width: {{ pct }}%"></span>
+          </div>
+          <span class="text-sm font-semibold text-muted tabular-nums">{{ unit.completed }}/{{ unit.total }}</span>
+        </div>
+      </div>
+      <div class="relative shrink-0">
+        <button type="button" class="icon-btn" aria-haspopup="menu" aria-expanded="false" data-menu-button aria-label="Options for {{ unit.title }}">{{ icon("more", "size-5") }}</button>
+        <div role="menu" class="absolute right-0 top-12 z-20 w-60 panel p-1.5 shadow-xl" data-menu hidden>
+          <button role="menuitem" type="button" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-2 text-left" data-action="rename">{{ icon("pencil", "size-4") }} Rename</button>
+          <button role="menuitem" type="button" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-2 text-left" data-action="regenerate">{{ icon("refresh", "size-4") }} Make new questions</button>
+          <button role="menuitem" type="button" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-bad-soft text-bad text-left" data-action="delete">{{ icon("trash", "size-4") }} Delete unit</button>
+        </div>
+      </div>
+    </div>
+    <div class="mt-4 flex flex-wrap gap-2">
+      {% if unit.next_lesson %}
+      <a href="/quiz/{{ unit.next_lesson.id }}" class="btn btn-primary btn-sm">{{ "Start" if unit.completed == 0 else "Continue" }}: {{ unit.next_lesson.title }}</a>
+      {% elif unit.lessons %}
+      <a href="/quiz/{{ unit.lessons[0].id }}" class="btn btn-secondary btn-sm">{{ icon("retry", "size-4") }} Review from the start</a>
+      {% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+<dialog class="modal" data-rename-dialog aria-labelledby="rename-title">
+  <form method="dialog" class="p-6" data-rename-form>
+    <h2 id="rename-title" class="text-xl font-bold">Rename unit</h2>
+    <label class="field-label mt-4" for="rename-input">Name</label>
+    <input class="input" id="rename-input" name="title" maxlength="120" required>
+    <div class="mt-6 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+      <button value="cancel" formnovalidate class="btn btn-secondary">Cancel</button>
+      <button value="save" class="btn btn-primary">Save</button>
+    </div>
+  </form>
+</dialog>
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="/static/js/uploader.js?v={{ settings.asset_version }}"></script>
+<script type="module" src="/static/js/library.js?v={{ settings.asset_version }}"></script>
+{% endblock %}
