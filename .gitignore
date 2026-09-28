@@ -1,0 +1,38 @@
+# ==========================================
+# Secrets & Environment Variables
+# ==========================================
+.env
+
+# ==========================================
+# Virtual Environments
+# ==========================================
+env/
+venv/
+.venv/
+ENV/
+
+# ==========================================
+# Python Cache & Bytecode
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# ==========================================
+# User Uploads & Local Data
+# ==========================================
+# We ignore the contents of the uploads folder, but keep the folder itself
+data/raw_uploads/*
+!data/raw_uploads/.gitkeep
+
+# Ignore local database files (if you ever use SQLite for quick testing)
+*.sqlite3
+*.db
+
+# ==========================================
+# IDE & OS Specific Files
+# ==========================================
+.vscode/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<span id="user-display-name" class="hidden">{{ user.username }}</span>
+
+<div
+    class="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 text-center mb-10 transition-colors duration-300">
+    <h2 class="text-2xl font-bold mb-2 text-slate-800 dark:text-white">Create a New Lesson</h2>
+    <p class="text-slate-500 dark:text-slate-400 mb-6">
+        Upload a lecture PDF or Text file. Promitheus will read it and generate an interactive quiz.
+    </p>
+
+    <div class="max-w-md mx-auto">
+        <input type="file" id="lecture-file" accept=".pdf,.txt" class="block w-full text-sm text-slate-500 dark:text-slate-400 mb-4
+            file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 
+            file:text-sm file:font-semibold 
+            file:bg-indigo-50 dark:file:bg-indigo-900/30 
+            file:text-indigo-700 dark:file:text-indigo-400
+            hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/50 cursor-pointer" />
+
+        <button id="upload-btn" onclick="uploadLecture()"
+            class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-4 px-4 rounded-xl transition duration-200 shadow-md">
+            Generate with AI ✨
+        </button>
+        <p id="upload-status" class="mt-4 text-sm font-semibold hidden"></p>
+    </div>
+</div>
+
+<div class="flex justify-between items-center mb-4">
+    <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100">Your Study Path</h3>
+    <button onclick="fetchLessons()" class="text-indigo-600 dark:text-indigo-400 text-sm font-semibold hover:underline">
+        Refresh
+    </button>
+</div>
+
+<div id="study-path" class="w-full relative mt-6">
+    <div class="text-center text-slate-400 p-6">Loading path...</div>
+</div>
+
+{% endblock %}

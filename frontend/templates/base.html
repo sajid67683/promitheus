@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Promitheus</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+
+<body
+    class="bg-white dark:bg-[#0b141a] text-slate-800 dark:text-slate-200 font-sans h-screen flex overflow-hidden transition-colors duration-300">
+
+    <div id="toast-container" class="fixed top-4 right-4 z-[100] flex flex-col items-end"></div>
+
+    <aside
+        class="hidden md:flex w-64 border-r-2 border-slate-200 dark:border-slate-800 flex-col px-4 py-6 h-full flex-shrink-0 relative bg-white dark:bg-[#0b141a] z-50">
+
+        <div class="px-4 mb-8">
+            <h1 class="text-3xl font-black text-[#4F46E5] tracking-tighter cursor-pointer flex items-center gap-2"
+                onclick="window.location.href='/'">
+                <span>📚</span> Promitheus
+            </h1>
+        </div>
+
+        <nav class="flex-1 flex flex-col space-y-1">
+            <a href="/" id="nav-learn"
+                class="nav-item {% if request.path == '/' or 'dashboard' in request.path %}active{% endif %}">
+                <span class="text-2xl drop-shadow-sm">✒️</span>
+                <span class="font-bold tracking-wide text-[15px]">LEARN</span>
+            </a>
+
+            <a href="#" id="nav-letters" class="nav-item">
+                <span class="text-2xl drop-shadow-sm">🔤</span>
+                <span class="font-bold tracking-wide text-[15px]">LETTERS</span>
+            </a>
+
+            <a href="#" id="nav-practice" class="nav-item">
+                <span class="text-2xl drop-shadow-sm">🏋️</span>
+                <span class="font-bold tracking-wide text-[15px]">PRACTICE</span>
+            </a>
+
+            <a href="/users/leaderboard" id="nav-leaderboard"
+                class="nav-item {% if 'leaderboard' in request.path %}active{% endif %}">
+                <span class="text-2xl drop-shadow-sm">🛡️</span>
+                <span class="font-bold tracking-wide text-[15px]">LEADERBOARDS</span>
+            </a>
+
+            <a href="/quests" id="nav-quests" class="nav-item {% if 'quests' in request.path %}active{% endif %}">
+                <span class="text-2xl drop-shadow-sm">🧰</span>
+                <span class="font-bold tracking-wide text-[15px]">QUESTS</span>
+            </a>
+
+            <div class="relative group mt-auto">
+                <a href="/users/profile" id="nav-profile"
+                    class="nav-item w-full text-left {% if 'profile' in request.path %}active{% endif %}">
+                    <span class="text-2xl drop-shadow-sm">👨‍🎓</span>
+                    <span class="font-bold tracking-wide text-[15px]">PROFILE</span>
+                </a>
+
+                <div class="hidden group-hover:block absolute left-full bottom-0 pl-4 z-50">
+                    <div
+                        class="w-64 bg-white dark:bg-[#131f24] border-2 border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl py-2">
+                        <div class="px-6 py-2 border-b-2 border-slate-200 dark:border-slate-700 mb-2">
+                            <span class="text-xs font-black text-slate-400 uppercase tracking-wider"
+                                id="sidebar-username">Guest</span>
+                        </div>
+
+                        <button onclick="toggleTheme()"
+                            class="w-full text-left px-6 py-3 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-300 transition-colors">
+                            TOGGLE THEME <span id="theme-toggle" class="float-right">🌙</span>
+                        </button>
+
+                        <button onclick="window.location.href='/login'" id="login-btn"
+                            class="hidden w-full text-left px-6 py-3 font-bold hover:bg-green-50 dark:hover:bg-green-900/20 text-green-500 transition-colors">
+                            LOG IN
+                        </button>
+
+                        <button onclick="logout()" id="logout-btn"
+                            class="hidden w-full text-left px-6 py-3 font-bold hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition-colors">
+                            LOG OUT
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+        </nav>
+    </aside>
+
+    <main class="flex-1 h-full overflow-y-auto flex flex-col relative">
+
+        <header class="w-full sticky top-0 bg-[#f8fafc]/90 dark:bg-[#0b141a]/90 backdrop-blur-md z-40">
+
+            <div class="max-w-[1056px] mx-auto w-full px-4 py-5 flex justify-end items-center gap-6">
+
+                <div class="relative group">
+                    <a href="/streaks"
+                        class="flex items-center gap-2 text-orange-500 font-bold p-2 rounded-xl cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        <span class="text-2xl drop-shadow-sm">🔥</span>
+                        <span id="streak-display" class="text-lg">0</span>
+                    </a>
+
+                    <div class="hidden group-hover:block absolute top-full right-0 pt-2 z-50">
+                        <div
+                            class="w-64 bg-white dark:bg-[#131f24] border-2 border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-5 cursor-default">
+                            <div class="flex items-start gap-4">
+                                <div class="text-5xl drop-shadow-md mt-1">🔥</div>
+                                <div>
+                                    <h3 class="font-bold text-xl text-slate-800 dark:text-slate-200 mb-1">Streak</h3>
+                                    <p class="text-slate-500 dark:text-slate-400 font-medium text-[15px]">
+                                        You have a <span id="streak-hover-text"
+                                            class="text-orange-500 font-black">0</span> day streak!
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative group">
+                    <div
+                        class="flex items-center gap-2 text-blue-500 font-bold p-2 rounded-xl cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        <span class="text-2xl drop-shadow-sm">💎</span>
+                        <span id="xp-display" class="text-lg">0 XP</span>
+                    </div>
+
+                    <div class="hidden group-hover:block absolute top-full right-0 pt-2 z-50">
+                        <div
+                            class="w-64 bg-white dark:bg-[#131f24] border-2 border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-5 cursor-default">
+                            <div class="flex items-start gap-4">
+                                <div class="text-5xl drop-shadow-md mt-1">💎</div>
+                                <div>
+                                    <h3 class="font-bold text-xl text-slate-800 dark:text-slate-200 mb-1">Experience
+                                    </h3>
+                                    <p class="text-slate-500 dark:text-slate-400 font-medium text-[15px]">
+                                        You have <span id="xp-hover-text" class="text-blue-500 font-black">0</span> XP
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </header>
+
+        <div class="max-w-[1056px] mx-auto w-full px-4 pb-20 flex gap-12 justify-center">
+
+            <div class="flex-1 max-w-[600px] relative">
+                {% block content %}{% endblock %}
+            </div>
+
+            <div class="hidden lg:block w-[320px] flex-shrink-0 mt-2">
+                {% block right_sidebar %}
+                <div
+                    class="border-2 border-slate-200 dark:border-slate-800 rounded-2xl p-5 mb-6 bg-white dark:bg-[#0b141a]">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="font-bold text-lg text-slate-800 dark:text-slate-200">Daily Quests</h3>
+                        <a href="#"
+                            class="text-[#1cb0f6] font-bold text-sm hover:text-[#1899d6] transition-colors uppercase tracking-wide">View
+                            All</a>
+                    </div>
+
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="text-3xl drop-shadow-sm">⚡</div>
+                        <div class="flex-1">
+                            <p class="text-[15px] font-bold text-slate-700 dark:text-slate-300 mb-2">Earn 50 XP</p>
+                            <div class="flex items-center gap-3">
+                                <div class="flex-1 bg-slate-200 dark:bg-slate-700 h-4 rounded-full overflow-hidden">
+                                    <div id="quest-1-bar"
+                                        class="bg-[#ffc800] h-full rounded-full transition-all duration-1000 w-0"></div>
+                                </div>
+                                <span id="quest-1-text"
+                                    class="text-xs font-bold text-slate-400 w-8 text-right">0/50</span>
+                                <div class="text-2xl grayscale opacity-40 transition-all duration-500"
+                                    id="quest-1-chest">🎁</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-4">
+                        <div class="text-3xl drop-shadow-sm">🎯</div>
+                        <div class="flex-1">
+                            <p class="text-[15px] font-bold text-slate-700 dark:text-slate-300 mb-2">Complete 1 Lesson
+                            </p>
+                            <div class="flex items-center gap-3">
+                                <div class="flex-1 bg-slate-200 dark:bg-slate-700 h-4 rounded-full overflow-hidden">
+                                    <div id="quest-2-bar"
+                                        class="bg-[#1cb0f6] h-full rounded-full transition-all duration-1000 w-0"></div>
+                                </div>
+                                <span id="quest-2-text"
+                                    class="text-xs font-bold text-slate-400 w-8 text-right">0/1</span>
+                                <div class="text-2xl grayscale opacity-40 transition-all duration-500"
+                                    id="quest-2-chest">🎁</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endblock %}
+            </div>
+        </div>
+    </main>
+
+    <script src="/static/js/scripts.js"></script>
+</body>
+
+</html>

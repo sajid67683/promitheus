@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="flex flex-col gap-10 w-full pb-10 cursor-default">
+
+    <div
+        class="flex items-center gap-6 border-2 border-slate-200 dark:border-slate-800 rounded-3xl p-8 bg-white dark:bg-[#0b141a]">
+        <div class="text-8xl drop-shadow-sm animate-pulse">🔥</div>
+        <div>
+            <h2 class="text-3xl font-black text-slate-800 dark:text-slate-200 mb-2">My Streak</h2>
+            <p class="font-bold text-lg text-slate-500 dark:text-slate-400">Keep the flame alive by completing a lesson
+                every day!</p>
+        </div>
+        <div class="ml-auto flex items-end gap-3 text-orange-500 font-black">
+            <span class="text-8xl leading-none" id="streak-page-count">0</span>
+            <span class="text-xl mb-2 tracking-widest">DAYS</span>
+        </div>
+    </div>
+
+    <div class="border-2 border-slate-200 dark:border-slate-800 rounded-3xl p-8 bg-white dark:bg-[#0b141a]">
+        <div class="flex justify-between items-center mb-8 pb-4 border-b-2 border-slate-100 dark:border-slate-800">
+            <h3 class="font-bold text-2xl text-slate-800 dark:text-slate-200">Study History</h3>
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-orange-500"></span>
+                <span class="text-sm font-bold text-slate-400 uppercase tracking-widest">Activity Log</span>
+            </div>
+        </div>
+
+        <div id="streak-calendar-mount" class="w-full min-h-[400px] flex items-center justify-center">
+            <div class="text-center">
+                <div
+                    class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-[#58cc02] border-t-transparent mb-4">
+                </div>
+                <p class="text-slate-400 font-bold">Synchronizing your study history...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div
+            class="p-6 bg-orange-50 dark:bg-orange-900/10 border-2 border-orange-100 dark:border-orange-900/30 rounded-2xl">
+            <h4 class="font-black text-orange-600 dark:text-orange-400 mb-2 italic">Pro Tip:</h4>
+            <p class="text-sm font-bold text-slate-600 dark:text-slate-400">Completing just one quick quiz a day is
+                enough to save your streak!</p>
+        </div>
+        <div class="p-6 bg-blue-50 dark:bg-blue-900/10 border-2 border-blue-100 dark:border-blue-900/30 rounded-2xl">
+            <h4 class="font-black text-blue-600 dark:text-blue-400 mb-2 italic">Consistency:</h4>
+            <p class="text-sm font-bold text-slate-600 dark:text-slate-400">Users with a 7-day streak are 3x more likely
+                to finish their course.</p>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

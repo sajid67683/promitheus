@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="flex flex-col gap-6 w-full pb-10">
+
+    <div class="w-full bg-[#1cb0f6] rounded-2xl p-6 text-white border-b-4 border-[#1899d6] relative overflow-hidden">
+        <div class="relative z-10">
+            <span id="dynamic-month-badge"
+                class="bg-white text-[#1cb0f6] font-black text-xs uppercase px-2 py-1 rounded-md tracking-wider">Month</span>
+
+            <h2 id="dynamic-month-title" class="text-3xl font-black mt-3 mb-1">Month Quest</h2>
+
+            <p id="monthly-timer" class="font-bold text-white/90 text-sm mb-6 flex items-center gap-1">⏱️ -- DAYS</p>
+
+            <div class="bg-black/10 rounded-2xl p-5 border-2 border-white/20">
+                <p class="font-bold mb-3">Complete 20 daily quests</p>
+                <div class="flex items-center gap-4">
+                    <div class="flex-1 bg-black/20 h-5 rounded-full overflow-hidden">
+                        <div id="monthly-bar" class="bg-white h-full rounded-full transition-all duration-1000 w-0">
+                        </div>
+                    </div>
+                    <span id="monthly-text" class="font-bold text-sm">0 / 20</span>
+                </div>
+            </div>
+        </div>
+        <div class="absolute right-[-20px] bottom-[-20px] text-9xl opacity-20 rotate-12">🏆</div>
+    </div>
+
+    <div class="border-2 border-slate-200 dark:border-slate-800 rounded-2xl p-6 bg-white dark:bg-[#0b141a]">
+        <div class="flex justify-between items-center mb-6 border-b-2 border-slate-100 dark:border-slate-800 pb-4">
+            <h3 class="font-bold text-xl text-slate-800 dark:text-slate-200">Daily Quests</h3>
+
+            <span id="daily-timer" class="text-orange-500 font-bold text-sm">⏱️ -- HOURS</span>
+        </div>
+
+        <div class="flex items-center gap-6 mb-8">
+            <div class="text-4xl drop-shadow-sm">⚡</div>
+            <div class="flex-1">
+                <p class="text-lg font-bold text-slate-700 dark:text-slate-300 mb-3">Earn 50 XP</p>
+                <div class="flex items-center gap-4">
+                    <div class="flex-1 bg-slate-200 dark:bg-slate-700 h-5 rounded-full overflow-hidden">
+                        <div id="qpage-xp-bar"
+                            class="bg-[#ffc800] h-full rounded-full transition-all duration-1000 w-0"></div>
+                    </div>
+                    <span id="qpage-xp-text" class="font-bold text-slate-400 w-12 text-right">0/50</span>
+                    <div class="text-3xl grayscale opacity-40 transition-all duration-500" id="qpage-xp-chest">🎁</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-6">
+            <div class="text-4xl drop-shadow-sm">🎯</div>
+            <div class="flex-1">
+                <p class="text-lg font-bold text-slate-700 dark:text-slate-300 mb-3">Complete 1 Lesson</p>
+                <div class="flex items-center gap-4">
+                    <div class="flex-1 bg-slate-200 dark:bg-slate-700 h-5 rounded-full overflow-hidden">
+                        <div id="qpage-lesson-bar"
+                            class="bg-[#1cb0f6] h-full rounded-full transition-all duration-1000 w-0"></div>
+                    </div>
+                    <span id="qpage-lesson-text" class="font-bold text-slate-400 w-12 text-right">0/1</span>
+                    <div class="text-3xl grayscale opacity-40 transition-all duration-500" id="qpage-lesson-chest">🎁
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block right_sidebar %}
+<div class="border-2 border-slate-200 dark:border-slate-800 rounded-2xl p-5 bg-white dark:bg-[#0b141a]">
+    <h3 class="font-bold text-lg text-slate-800 dark:text-slate-200 mb-6">Monthly Badges</h3>
+
+    <div class="flex gap-4 mb-6 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-pointer">
+        <div class="text-4xl">🏅</div>
+        <div>
+            <p id="sidebar-month-badge" class="font-bold text-slate-700 dark:text-slate-300 text-sm">Current Quest</p>
+            <p class="text-xs text-slate-400 mt-1">Complete 20 quests to earn this badge</p>
+        </div>
+    </div>
+
+    <div class="flex gap-4 mb-6 cursor-pointer">
+        <div class="text-4xl drop-shadow-md">🐸</div>
+        <div>
+            <p class="font-bold text-slate-700 dark:text-slate-300 text-sm">March Quest</p>
+            <p class="text-xs text-slate-400 mt-1">March 2026</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

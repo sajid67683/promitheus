@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block content %}
+<span id="user-display-name" class="hidden"></span>
+
+<div id="quiz-container" class="max-w-2xl mx-auto mt-10 pb-40">
+    <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-4 mb-12">
+        <div id="progress-bar"
+            class="bg-[#58cc02] h-4 rounded-full transition-all duration-500 shadow-[0_3px_0_#46a302]"
+            style="width: 5%"></div>
+    </div>
+
+    <div id="question-card"
+        class="w-full bg-white dark:bg-[#131f24] p-8 md:p-12 rounded-3xl border-2 border-slate-200 dark:border-slate-800 min-h-[400px] flex flex-col items-start transition-all duration-300 shadow-sm">
+        <h1 id="question-header" class="text-3xl font-black text-slate-800 dark:text-white mb-10 tracking-tight">
+            Fill in the blank
+        </h1>
+
+        <div id="sentence-container"
+            class="text-2xl font-bold text-slate-700 dark:text-slate-200 mb-12 leading-relaxed tracking-wide">
+            Loading question...
+        </div>
+
+        <div id="options-container" class="w-full space-y-3">
+        </div>
+    </div>
+</div>
+
+<div id="quiz-feedback-bar"
+    class="fixed bottom-0 left-0 right-0 h-36 transform translate-y-full transition-all duration-300 ease-out z-[100] flex items-center border-t-2 bg-white dark:bg-[#131f24]">
+    <div class="max-w-[1056px] mx-auto w-full px-6 flex justify-between items-center">
+        <div class="flex items-center gap-6">
+            <div id="feedback-icon-circle"
+                class="w-20 h-20 rounded-full flex items-center justify-center text-4xl shadow-sm">
+                <span id="feedback-icon"></span>
+            </div>
+            <div>
+                <h3 id="feedback-title" class="text-2xl font-black mb-1"></h3>
+                <p id="feedback-solution" class="font-bold text-lg"></p>
+            </div>
+        </div>
+
+        <div class="flex gap-4">
+            <button id="report-btn"
+                class="hidden md:flex items-center gap-2 font-black uppercase text-sm tracking-widest transition-opacity hover:opacity-70">
+                <span>🚩</span> Report
+            </button>
+
+            <button id="next-question-btn"
+                class="px-12 py-4 rounded-2xl font-black text-xl tracking-widest shadow-[0_5px_0_rgba(0,0,0,0.2)] active:shadow-none active:translate-y-[2px] transition-all uppercase min-w-[200px]">
+                Continue
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Option Button Styling */
+    .option-btn {
+        @apply w-full text-left p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-800 font-bold text-lg text-slate-700 dark:text-slate-300 transition-all duration-100 hover:bg-slate-50 dark:hover:bg-slate-800/50 shadow-[0_3px_0_#e2e8f0] dark:shadow-[0_3px_0_#1e293b];
+    }
+
+    /* ✨ States for JavaScript to toggle ✨ */
+    .is-correct-selection {
+        background-color: #d7ffb8 !important;
+        border-color: #58cc02 !important;
+        color: #58a700 !important;
+        box-shadow: 0 3px 0 #58cc02 !important;
+    }
+
+    .is-wrong-selection {
+        background-color: #ffdfe0 !important;
+        border-color: #ea2b2b !important;
+        color: #ea2b2b !important;
+        box-shadow: 0 3px 0 #ea2b2b !important;
+    }
+
+    .option-btn.selected {
+        @apply border-[#84d8ff] bg-[#ddf4ff] text-[#1899d6] shadow-[0_3px_0_#84d8ff];
+    }
+
+    .quiz-blank {
+        @apply border-b-2 border-slate-400 mx-2 inline-block min-w-[80px] text-center text-indigo-500;
+    }
+
+    .animate-shake {
+        animation: shake 0.4s cubic-bezier(.36, .07, .19, .97) both;
+    }
+
+    @keyframes shake {
+
+        10%,
+        90% {
+            transform: translate3d(-1px, 0, 0);
+        }
+
+        20%,
+        80% {
+            transform: translate3d(2px, 0, 0);
+        }
+
+        30%,
+        50%,
+        70% {
+            transform: translate3d(-4px, 0, 0);
+        }
+
+        40%,
+        60% {
+            transform: translate3d(4px, 0, 0);
+        }
+    }
+</style>
+{% endblock %}

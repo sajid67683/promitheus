@@ -1,0 +1,21 @@
+# --- Web Server & API Framework ---
+fastapi
+uvicorn[standard]
+python-multipart
+
+# --- Database & ORM ---
+sqlalchemy
+psycopg2-binary
+alembic
+
+# --- Data Validation & Settings ---
+pydantic
+pydantic-settings
+python-dotenv
+
+# --- AI & Language Models ---
+google-genai
+# openai  (Uncomment this if you decide to use OpenAI instead of Gemini)
+
+# --- PDF & File Processing ---
+PyMuPDF
