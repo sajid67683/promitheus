@@ -1,5 +1,6 @@
 {% extends "_app.html" %}
 {% from "_icons.html" import icon %}
+{% from "_league.html" import league_badge %}
 {% block page_title %}Profile{% endblock %}
 
 {% block content %}
@@ -23,7 +24,8 @@
     ("gift", "gold", me.quests_completed, "Quests done", "/quests"),
   ] %}
   <div class="panel p-4 flex items-center gap-3 relative {{ 'hover:bg-surface-2' if href else '' }}">
-    <span class="grid place-items-center size-10 rounded-xl bg-{{ tone }}-soft text-{{ tone }} shrink-0">{{ icon(ic, "size-5", filled=ic in ["flame", "zap"]) }}</span>
+    {% if label == "League" %}{{ league_badge(me.league, 40) }}
+    {% else %}<span class="grid place-items-center size-10 rounded-xl bg-{{ tone }}-soft text-{{ tone }} shrink-0">{{ icon(ic, "size-5", filled=ic in ["flame", "zap"]) }}</span>{% endif %}
     <div class="min-w-0">
       <dd class="text-xl font-extrabold tabular-nums truncate">{% if href %}<a href="{{ href }}" class="after:absolute after:inset-0">{{ value }}</a>{% else %}{{ value }}{% endif %}</dd>
       <dt class="text-sm text-muted">{{ label }}</dt>

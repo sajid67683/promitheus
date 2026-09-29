@@ -1,4 +1,5 @@
 {% from "_icons.html" import icon %}
+{% from "_league.html" import league_badge %}
 {% set goal = me.goals.daily_xp %}
 {% set goal_pct = [100, (me.daily_xp * 100 / goal)|round|int]|min %}
 <section class="panel p-5" aria-labelledby="goal-heading">
@@ -30,6 +31,16 @@
         {% elif me.last_lesson_date == today.isoformat() %}You studied today. See you tomorrow!
         {% else %}Finish a lesson today to keep it going.{% endif %}
       </p>
+    </div>
+  </a>
+</section>
+
+<section class="panel p-5" aria-labelledby="league-heading">
+  <a href="/leaderboard" class="flex items-center gap-4 group">
+    {{ league_badge(me.league, 48) }}
+    <div>
+      <h2 id="league-heading" class="font-bold group-hover:underline">{{ me.league }} League</h2>
+      <p class="text-sm text-muted">{{ me.weekly_xp }} XP this week. See where you rank.</p>
     </div>
   </a>
 </section>

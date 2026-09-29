@@ -16,12 +16,12 @@ def send_password_reset(to: str, username: str, link: str) -> None:
         return
 
     body = f"""
-    <div style="font-family:Lexend,Arial,sans-serif;max-width:480px;margin:auto;color:#1C1830">
+    <div style="font-family:Lexend,Arial,sans-serif;max-width:480px;margin:auto;color:#0f2926">
       <h2 style="margin:0 0 12px">Reset your Promitheus password</h2>
       <p>Hi {html.escape(username)}, someone (hopefully you) asked to reset your password.</p>
-      <p><a href="{html.escape(link)}" style="display:inline-block;background:#6A4CF5;color:#fff;
+      <p><a href="{html.escape(link)}" style="display:inline-block;background:#0f766e;color:#fff;
          padding:12px 20px;border-radius:12px;text-decoration:none;font-weight:600">Choose a new password</a></p>
-      <p style="color:#6B6785;font-size:14px">This link expires in 1 hour. If you didn't ask for it, ignore this email.</p>
+      <p style="color:#4a5d5a;font-size:14px">This link expires in 1 hour. If you didn't ask for it, ignore this email.</p>
     </div>
     """
     try:

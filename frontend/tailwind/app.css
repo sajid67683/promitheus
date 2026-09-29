@@ -1,4 +1,4 @@
-/* Promitheus design system ("Ember").
+/* Promitheus design system.
    Build: cd frontend && npm run build   ->  static/css/app.css */
 @import "tailwindcss";
 
@@ -7,78 +7,80 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ---------- tokens ---------- */
+/* ---------- tokens ----------
+   Palette from the ui-ux-pro-max "LMS / education" profile (study teal + amber + grade green),
+   tuned for WCAG AA. Teal = brand & actions, orange = streak, gold = XP, green = correct. */
 :root {
-  --paper: #faf9ff;
+  --paper: #f5f8f7;
   --surface: #ffffff;
-  --surface-2: #f3f1fb;
-  --line: #e4e0f2;
-  --line-strong: #d3cdea;
-  --ink: #1c1830;
-  --muted: #5f5a7a;
-  --faint: #8a85a3;
+  --surface-2: #edf3f1;
+  --line: #d9e4e1;
+  --line-strong: #c2d2ce;
+  --ink: #0f2926;
+  --muted: #4a5d5a;
+  --faint: #7b8d8a;
 
-  --brand: #5b3ef0; /* text & icons */
-  --brand-fill: #6a4cf5; /* buttons */
-  --brand-edge: #4b2fd4;
-  --brand-soft: #eeeaff;
+  --brand: #0f766e; /* text & icons */
+  --brand-fill: #0f766e; /* buttons */
+  --brand-edge: #0a4f4a;
+  --brand-soft: #dcf2ee;
 
-  --ember: #ad4705; /* streak text */
-  --ember-fill: #ff7a1a;
-  --ember-soft: #fff0e3;
+  --ember: #b7410e; /* streak text */
+  --ember-fill: #f97316;
+  --ember-soft: #fdeee2;
 
-  --gold: #a26b00; /* xp text */
-  --gold-fill: #f5b301;
-  --gold-soft: #fff6d6;
+  --gold: #8a6100; /* xp text */
+  --gold-fill: #eab308;
+  --gold-soft: #fdf6d8;
 
-  --good: #137a47;
-  --good-fill: #138048;
-  --good-edge: #0d6337;
-  --good-soft: #e3f6eb;
+  --good: #116b33;
+  --good-fill: #15803d;
+  --good-edge: #0f5f2d;
+  --good-soft: #e2f5e6;
 
-  --bad: #c42f35;
+  --bad: #c2323a;
   --bad-fill: #d63c42;
   --bad-edge: #a82d33;
-  --bad-soft: #fdecec;
+  --bad-soft: #fcecec;
 
-  --focus: #6a4cf5;
+  --focus: #0f766e;
   color-scheme: light;
 }
 
 .dark {
-  --paper: #120f1d;
-  --surface: #1b1729;
-  --surface-2: #241f37;
-  --line: #2f2945;
-  --line-strong: #3f3760;
-  --ink: #eeeaf9;
-  --muted: #b0aacb;
-  --faint: #847e9f;
+  --paper: #0b1614;
+  --surface: #11201e;
+  --surface-2: #172b28;
+  --line: #213834;
+  --line-strong: #2e4a45;
+  --ink: #e5f1ee;
+  --muted: #a3b8b3;
+  --faint: #6f8782;
 
-  --brand: #a996ff;
-  --brand-fill: #6a4cf5;
-  --brand-edge: #4b2fd4;
-  --brand-soft: #2a2350;
+  --brand: #2dd4bf;
+  --brand-fill: #0f766e;
+  --brand-edge: #0a4f4a;
+  --brand-soft: #0f332e;
 
-  --ember: #ff9a52;
-  --ember-fill: #ff7a1a;
-  --ember-soft: #3a2418;
+  --ember: #fb923c;
+  --ember-fill: #f97316;
+  --ember-soft: #3a2213;
 
-  --gold: #ffc83d;
-  --gold-fill: #f5b301;
-  --gold-soft: #372c10;
+  --gold: #facc15;
+  --gold-fill: #eab308;
+  --gold-soft: #332a0b;
 
-  --good: #5fdc97;
-  --good-fill: #138048;
-  --good-edge: #0d6337;
-  --good-soft: #15301f;
+  --good: #4ade80;
+  --good-fill: #15803d;
+  --good-edge: #0f5f2d;
+  --good-soft: #10301b;
 
   --bad: #ff8589;
   --bad-fill: #d63c42;
   --bad-edge: #a82d33;
-  --bad-soft: #3a1a20;
+  --bad-soft: #3a1a1f;
 
-  --focus: #a996ff;
+  --focus: #2dd4bf;
   color-scheme: dark;
 }
 
@@ -375,7 +377,7 @@
   .path-node[data-state="done"] {
     background: var(--gold-fill);
     color: #4a3000;
-    box-shadow: 0 6px 0 #c48a00;
+    box-shadow: 0 6px 0 #a87f06;
   }
   .path-node[data-state="current"] {
     background: var(--brand-fill);
@@ -391,7 +393,7 @@
     box-shadow: 0 2px 0 var(--brand-edge);
   }
   a.path-node[data-state="done"]:active {
-    box-shadow: 0 2px 0 #c48a00;
+    box-shadow: 0 2px 0 #a87f06;
   }
   .start-bubble {
     position: absolute;

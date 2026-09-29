@@ -30,7 +30,7 @@
           {% set value = style ~ ":" ~ (seed|replace(".", "-")) %}
           <label class="justify-self-center inline-grid cursor-pointer rounded-full has-checked:ring-4 has-checked:ring-brand-fill has-checked:ring-offset-2 has-checked:ring-offset-surface has-focus-visible:outline-3 has-focus-visible:outline-brand-fill">
             <input type="radio" name="avatar" value="{{ value }}" class="sr-only" {% if value == current %}checked{% endif %}>
-            <img src="https://api.dicebear.com/9.x/{{ style }}/svg?seed={{ seed|replace('.', '-')|urlencode }}&size=64&radius=50&backgroundColor=d7cffc,ffd9bf,c7f0d8"
+            <img src="https://api.dicebear.com/9.x/{{ style }}/svg?seed={{ seed|replace('.', '-')|urlencode }}&size=64&radius=50&backgroundColor=b6e8df,fde2c7,f7e7a6"
                  alt="{{ style|replace('-', ' ') }} avatar" width="64" height="64" class="size-14 sm:size-16 rounded-full bg-surface-2">
           </label>
           {% endfor %}

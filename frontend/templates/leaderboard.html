@@ -1,21 +1,14 @@
 {% extends "_app.html" %}
 {% from "_icons.html" import icon %}
+{% from "_league.html" import league_badge %}
 {% block page_title %}Leagues{% endblock %}
 
-{% set LEAGUE_COLORS = {
-  "Paper": "#8a85a3", "Iron": "#6b7280", "Bronze": "#b0703a", "Silver": "#9aa4b2",
-  "Gold": "#e0a400", "Platinum": "#39a7a0", "Diamond": "#5b8cff"
-} %}
 {% set ZONE_LABEL = {"promote": "Promotion zone", "safe": "Safe zone", "demote": "Demotion zone"} %}
 
 {% block content %}
-{% set color = LEAGUE_COLORS[board.league] %}
+{% set current_index = LEAGUE_ORDER.index(board.league) %}
 <section class="text-center pt-2">
-  <div class="flex items-end justify-center gap-2" aria-hidden="true">
-    {% for league in LEAGUE_ORDER %}
-    <span class="rounded-xl {{ 'size-14' if league == board.league else 'size-8 opacity-40' }}" style="background: {{ LEAGUE_COLORS[league] }}"></span>
-    {% endfor %}
-  </div>
+  <div class="mx-auto w-fit drop-shadow-[0_10px_18px_rgb(15_41_38/0.18)]">{{ league_badge(board.league, 116) }}</div>
   <h1 class="mt-5 text-2xl sm:text-3xl font-extrabold">{{ board.league }} League</h1>
   <p class="mt-2 text-muted max-w-md mx-auto">
     {% if board.next_league and board.promote_count %}
@@ -26,6 +19,17 @@
       Earn XP this week to climb the ranks.
     {% endif %}
   </p>
+  <ol class="mt-6 flex justify-center gap-1.5 sm:gap-3" aria-label="League ladder">
+    {% for league in LEAGUE_ORDER %}
+    <li class="flex flex-col items-center gap-1 w-11 sm:w-14 {{ 'text-ink font-bold' if league == board.league else 'text-muted' }}"
+        {% if league == board.league %}aria-current="step"{% endif %}>
+      <span class="rounded-2xl p-1 {{ 'bg-brand-soft ring-2 ring-brand-fill' if league == board.league else '' }}">
+        {{ league_badge(league, 34, dim=loop.index0 > current_index) }}
+      </span>
+      <span class="text-[0.7rem] leading-tight">{{ league }}</span>
+    </li>
+    {% endfor %}
+  </ol>
 </section>
 
 <ol class="mt-8 panel overflow-hidden" aria-label="Weekly ranking">

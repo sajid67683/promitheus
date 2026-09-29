@@ -205,4 +205,4 @@ def avatar_url(user: models.User, size: int = 96) -> str:
         style, seed = "bottts", user.username.replace(".", "-")
     from urllib.parse import quote
 
-    return f"https://api.dicebear.com/9.x/{style}/svg?seed={quote(seed)}&size={size}&radius=50&backgroundColor=d7cffc,ffd9bf,c7f0d8"
+    return f"https://api.dicebear.com/9.x/{style}/svg?seed={quote(seed)}&size={size}&radius=50&backgroundColor=b6e8df,fde2c7,f7e7a6"
